@@ -1,5 +1,9 @@
 <?php
 
+require_once('Color.php');
+require_once('Image.php');
+require_once('Palette.php');
+
 class Color
 {
     private $colors = array();
@@ -41,12 +45,19 @@ class Color
         'palegoldenrod'=>0xeee8aa,'palegreen'=>0x98fb98,'paleturquoise'=>0xafeeee,'palevioletred'=>0xdb7093,
         'papayawhip'=>0xffefd5,'peachpuff'=>0xffdab9,'peru'=>0xcd853f,'pink'=>0xffc0cb,'plum'=>0xdda0dd,
         'powderblue'=>0xb0e0e6,'purple'=>0x800080,'rebeccapurple'=>0x663399,'red'=>0xff0000,'rosybrown'=>0xbc8f8f,
+        /*
+         * On 21 June 2014, the CSS WG added the color RebeccaPurple to the Editor's Draft of the CSS4 Colors module,
+         * to commemorate Eric Meyer's daughter Rebecca who died on 7 June 2014, her sixth birthday.
+         * https://lists.w3.org/Archives/Public/www-style/2014Jun/0312.html
+         */
         'royalblue'=>0x4169e1,'saddlebrown'=>0x8b4513,'salmon'=>0xfa8072,'sandybrown'=>0xf4a460,
         'seagreen'=>0x2e8b57,'seashell'=>0xfff5ee,'sienna'=>0xa0522d,'silver'=>0xc0c0c0,
         'skyblue'=>0x87ceeb,'slateblue'=>0x6a5acd,'slategray'=>0x708090,'slategrey'=>0x708090,
         'snow'=>0xfffafa,'springgreen'=>0x00ff7f,'steelblue'=>0x4682b4,'tan'=>0xd2b48c,'teal'=>0x008080,
         'thistle'=>0xd8bfd8,'tomato'=>0xff6347,'turquoise'=>0x40e0d0,'violet'=>0xee82ee,'wheat'=>0xf5deb3,
         'white'=>0xffffff,'whitesmoke'=>0xf5f5f5,'yellow'=>0xffff00,'yellowgreen'=>0x9acd32];
+
+
 
 
     public function __construct($color, $param1=null, $param2=null)
@@ -64,6 +75,9 @@ class Color
                      */
                     if((is_int($param1) and $param1>=0) and (is_int($param2) and $param2>=0)) {
                         $this->value = imagecolorat($color, $param1, $param2);
+                        if($this->value === false) {
+                            throw new \Exception('Pixel out of bounds');
+                        }
                     } else {
                         /*
                          * missing or invalid $param1 and $param2
@@ -96,23 +110,38 @@ class Color
             case 'string':
                 $color=trim($color, '#\r\n\t ');
 
-                if(!ctype_xdigit($color)) {
+                if(ctype_xdigit($color)) {
+                    if(strlen($color) == 3) {
+                        $color = $color{0}.$color{0}.$color{1}.$color{1}.$color{2}.$color{2};
+                    }
+
+                    if(strlen($color) < 6) {
+                        $color = str_pad($color, 6, '0', STR_PAD_LEFT);
+                    }
+
+                    if(strlen($color) == 6) {
+                        $this->value = hexdec($color);
+                    } else {
+                        throw new \Exception('Not sure what this hex string is "'.$color.'", please let me know');
+                    }
+                } elseif(strpos($color, 'rgb')!==false or strpos($color, ',')!==false) {
+                    // i hope this is some sort of rgb(r,g,b) kinda string, or maybe even rgba(r,g,b,a) - ignoring a
+                    $color = trim(str_replace(array('rgb', 'rgba', '(', ')'), '', $color), "\r\n\t ");
+                    if(strpos($color, ',')!==false) {
+                        $color = str_replace(' ', '', $color);
+                        $color = explode(',', $color);
+                        if(count($color)==3 or count($color)==4) {
+                            if(max($color)>255) {
+                                throw new \Exception('If this is rgb, one of the channels is over 255...');
+                            }
+                            $this->value = $color[0] * 256*256 + $color[1] * 256 + $color[2];
+                        }
+                    }
+                } else {
                     throw new \Exception('This is not hex, for support of other string formats, just let me know...');
                 }
 
-                if(strlen($color) == 3) {
-                    $color = $color{0}.$color{0}.$color{1}.$color{1}.$color{2}.$color{2};
-                }
 
-                if(strlen($color) < 6) {
-                    $color = str_pad($color, 6, '0', STR_PAD_LEFT);
-                }
-
-                if(strlen($color) == 6) {
-                    $this->value = hexdec($color);
-                } else {
-                    throw new \Exception('Not sure what this string is "'.$color.'" - but I would really like to know');
-                }
 
                 break;
 
@@ -246,8 +275,10 @@ class Color
         }
     }
 
-    public function findSimilar($comparisonType = Color::COMPARE_FAST, $collection = null)
+    public function findSimilar($comparisonType = null, $collection = null)
     {
+        $comparisonType = (is_null($comparisonType)) ? Color::COMPARE_FAST : $comparisonType;
+
         if(is_null($collection)) {
             $collection = $this->cssColors;
         }

@@ -1,304 +1,305 @@
 <?php
 
+require_once('Color.php');
+require_once('Image.php');
+require_once('Palette.php');
+
 class Palette
 {
-    private $image = NULL;
+    private $comparisonType = NULL;
 
-    private $imageObject = NULL;
+    const ADAPTIVE_PRECISION   =-1;
 
+    const PALETTE_COLOR_TOOLS  = 0;
+    const PALETTE_BRIAN_MCDO   = 1;
+    const PALETTE_RGB3         = 2;
+    const PALETTE_NES          = 3;
+    const PALETTE_APPLE        = 4;
 
+    const DEFAULT_MIN_COVERAGE = 4;
 
-    private $precision = 5;
+    private $palette = null;
 
-    private $colors = array();
+    private $colorTools = array(
+        0x000000,0x000091,0x0000ff,0x910000,0x910091,0x9100ff,0xff0000,0xff0091,0xff00ff,
+        0x009100,0x009191,0x0091ff,0x919100,0x919191,0x9191ff,0xff9100,0xff9191,0xff91ff,
+        0x00ff00,0x00ff91,0x00ffff,0x91ff00,0x91ff91,0x91ffff,0xffff00,0xffff91,0xffffff,
+        0xea4c88,0x993399,0x663399
+    );
 
-    private $palette = array(
-        0x660000, 0x990000, 0xcc0000, 0xcc3333, 0xea4c88, 0x993399,
-        0x663399, 0x333399, 0x0066cc, 0x0099cc, 0x66cccc, 0x77cc33,
-        0x669900, 0x336600, 0x666600, 0x999900, 0xcccc33, 0xffff00,
-        0xffcc33, 0xff9900, 0xff6600, 0xcc6633, 0x996633, 0x663300,
-        0x000000, 0x999999, 0xcccccc, 0xffffff, 0xE7D8B1, 0xFDADC7,
-        0x424153, 0xABBCDA, 0xF5DD01
+    /*
+     * https://en.wikipedia.org/wiki/List_of_monochrome_and_RGB_palettes#3-level_RGB
+     */
+
+    private $rgb3 = array(
+        0x000000,0x000091,0x0000ff,0x910000,0x910091,0x9100ff,0xff0000,0xff0091,0xff00ff,
+        0x009100,0x009191,0x0091ff,0x919100,0x919191,0x9191ff,0xff9100,0xff9191,0xff91ff,
+        0x00ff00,0x00ff91,0x00ffff,0x91ff00,0x91ff91,0x91ffff,0xffff00,0xffff91,0xffffff
+    );
+
+    /*
+     * https://en.wikipedia.org/wiki/List_of_video_game_console_palettes#Famicom.2FNES
+     */
+
+    private $nes = array(
+        0x007c7c,0x0000fc,0x0000bc,0x0028bc,0x000084,0x00f878,0x00f8b8,0x00f8d8,0x00d8d8,
+        0x007800,0x006800,0x005800,0x004058,0x000000,0x00bcbc,0x0078f8,0x0058f8,0x0044fc,
+        0x0000cc,0x000058,0x003800,0x005c10,0x007c00,0x00b800,0x00a800,0x00a844,0x008888,
+        0x00f8f8,0x00bcfc,0x0088fc,0x005898,0x007858,0x00a044,0x00f818,0x00d854,0x00f898,
+        0x00e8d8,0x007878,0x00fcfc,0x00e4fc,0x00b8f8,0x00a4c0,0x00d0b0,0x00e0a8,0x00d878
+    );
+
+    /*
+     * https://en.wikipedia.org/wiki/List_of_software_palettes#Apple_Macintosh_default_16-color_palette
+     */
+
+    private $apple = array(
+        0xffffff,0xffff00,0xff6600,0xdd0000,0xff0099,0x330099,0x0000cc,0x0099ff,
+        0x00aa00,0x006600,0x663300,0x996633,0xbbbbbb,0x888888,0x444444,0x000000
+    );
+
+    /*
+     *  https://github.com/brianmcdo/ImagePalette
+     */
+
+    private $BrianMcdoPalette = array(
+        0x660000,0x990000,0xcc0000,0xcc3333,0xea4c88,0x993399,0x663399,0x333399,0x0066cc,
+        0x0099cc,0x66cccc,0x77cc33,0x669900,0x336600,0x666600,0x999900,0xcccc33,0xffff00,
+        0xffcc33,0xff9900,0xff6600,0xcc6633,0x996633,0x663300,0x000000,0x999999,0xcccccc,
+        0xffffff, 0xe7d8b1, 0xfdadc7,0x424153, 0xabbcda, 0xf5dd01
     );
 
 
-    public function __construct($image)
+    public function __construct($paletteType = null, $comparisonType = null)
     {
-        if(!file_exists($image)) {
-            throw new \Exception('Invalid filename');
+        $paletteType = (is_null($paletteType)) ? Palette::PALETTE_BRIAN_MCDO : $paletteType;
+        $this->comparisonType = (is_null($comparisonType)) ? Color::COMPARE_GREAT : $comparisonType;
+
+        if($paletteType==Palette::PALETTE_COLOR_TOOLS) {
+            $this->palette = $this->colorTools;
         }
 
-        if(filesize($image)<=11) {
-            throw new \Exception('This is too small to be an image');
+        if($paletteType==Palette::PALETTE_BRIAN_MCDO) {
+            $this->palette = $this->BrianMcdoPalette;
         }
 
-        $this->image = $image;
-        $this->getImageDetails();
-    }
-
-    private function getImageDetails()
-    {
-        $size = getimagesize($this->image);
-        if(empty($size)) {
-            throw new \Exception('This is not an image');
+        if($paletteType==Palette::PALETTE_RGB3) {
+            $this->palette = $this->rgb3;
         }
 
-        $this->type = substr($size['mime'], 6);
-        $this->mime = $size['mime'];
-        $this->width = $size[0];
-        $this->height = $size[1];
-    }
+        if($paletteType==Palette::PALETTE_NES) {
+            $this->palette = $this->nes;
+        }
 
-    private function createImageObject()
-    {
-        $this->imageObject = call_user_func('imagecreatefrom'.$this->type, $this->image);
+        if($paletteType==Palette::PALETTE_APPLE) {
+            $this->palette = $this->apple;
+        }
+
+
+        if(is_null($this->palette)) {
+            throw new \Exception('Invalid palette selected');
+        }
     }
 
     public function getPalette()
     {
-        $this->createImageObject();
+        return $this->palette;
+    }
 
-        for($x=0; $x<$this->width; $x+=$this->precision) {
-            for($y=0; $y<$this->height; $y+=$this->precision) {
+    public function getColors(Image $image, $precision=null, $minCoverage = null)
+    {
+        $precision = (is_null($precision)) ? Palette::ADAPTIVE_PRECISION : $precision;
+        $minCoverage = (is_null($minCoverage)) ? Palette::DEFAULT_MIN_COVERAGE : $minCoverage;
 
-                /*
-                $color=Color::create($this->imageObject, $x, $y);
-                print_r($color->getValue());
-                echo PHP_EOL;
+        $pixels = $image->width * $image->height;
 
-                $color = imagecolorat($this->imageObject, $x, $y);
-                $color5=Color::create($color);
-                print_r($color5->getValue());
-                echo PHP_EOL;
-
-                $rgb = imagecolorsforindex($this->imageObject, $color);
-
-                $color2=Color::create($rgb);
-                print_r($color2->getValue());
-                echo PHP_EOL;
-                $this_Rgb   = sprintf('#%02X%02X%02X', $rgb['red'], $rgb['green'], $rgb['blue']);
-
-                $color3=Color::create($this_Rgb);
-                print_r($color3->getValue());
-                echo PHP_EOL;
-                print_r($color3->getHex());
-                echo PHP_EOL;
-                print_r($color3->getRgb());
-                echo PHP_EOL;
-                echo $color3;
-                echo PHP_EOL;
-                print_r($color3->hex);
-                echo PHP_EOL;
-                print_r($color3->rgb);
-                echo PHP_EOL;
-                print_r($color3->int);
-                echo PHP_EOL;
-                print_r($color3->asd);
-                echo PHP_EOL;
-
-                $color4=Color::create(0x834B0E);
-                print_r($color4->getValue());
-                echo PHP_EOL;
-
-                $color6=Color::create($color4);
-                print_r($color6->getValue());
-                echo PHP_EOL;
-
-                echo PHP_EOL.'||';
-                $color7=Color::create(0xabcdef);
-                echo $color7->negate()->hex;
-                echo PHP_EOL;
-                echo PHP_EOL.'||';
-                echo PHP_EOL.'||';
-                echo PHP_EOL;
-                echo $color7->compare(336699);
-
-*/
-                echo PHP_EOL;
-                echo PHP_EOL.'||';
-                echo PHP_EOL.'||';
-                echo PHP_EOL;
-                $color8=Color::create('#52a7ff');
-                echo $color8->hex;
-                echo $color8->findSimilar()->name;
-
-                echo PHP_EOL;
-                echo PHP_EOL.'||';
-                echo PHP_EOL.'||';
-                echo PHP_EOL;
+        if($precision == Palette::ADAPTIVE_PRECISION) {
+            //getting the pixels of an image that is (for example) 300 x 400
+            $precision = intval(ceil($pixels/120000));
+        }
 
 
-                exit();
+        $palette = $this->palette;
+        $paletteQ = array();
+
+        for($x=0; $x<=($image->width - $precision); $x+=$precision) {
+            for($y=0; $y<=($image->height - $precision); $y+=$precision) {
+                $color = Color::create($image->getImageObject(), $x, $y)->findSimilar($this->comparisonType, $palette)->hex;
+                if(!isset($paletteQ[$color])) {
+                    $paletteQ[$color] =pow($precision,2);
+                } else {
+                    $paletteQ[$color]+=pow($precision,2);
+                }
             }
         }
+
+        asort($paletteQ, SORT_NUMERIC);
+        $paletteQ = array_reverse($paletteQ);
+
+        foreach($paletteQ as $hex=>$value) {
+            $paletteQ[$hex] = round($value / $pixels * 100, 2); //convert the coverage to % out of total number of pixels
+
+            if($minCoverage and $paletteQ[$hex] < $minCoverage) {
+                unset($paletteQ[$hex]);
+            }
+        }
+
+
+        return $paletteQ;
     }
 }
 
-require_once 'Color.php';
-
-$image = new Palette('test.jpg');
-$image->getPalette();
 
 /*
 
-$string='aliceblue	#F0F8FF	240,248,255
-antiquewhite	#FAEBD7	250,235,215
-aqua	#00FFFF	0,255,255
-aquamarine	#7FFFD4	127,255,212
-azure	#F0FFFF	240,255,255
-beige	#F5F5DC	245,245,220
-bisque	#FFE4C4	255,228,196
-black	#000000	0,0,0
-blanchedalmond	#FFEBCD	255,235,205
-blue	#0000FF	0,0,255
-blueviolet	#8A2BE2	138,43,226
-brown	#A52A2A	165,42,42
-burlywood	#DEB887	222,184,135
-cadetblue	#5F9EA0	95,158,160
-chartreuse	#7FFF00	127,255,0
-chocolate	#D2691E	210,105,30
-coral	#FF7F50	255,127,80
-cornflowerblue	#6495ED	100,149,237
-cornsilk	#FFF8DC	255,248,220
-crimson	#DC143C	220,20,60
-cyan	#00FFFF	0,255,255
-darkblue	#00008B	0,0,139
-darkcyan	#008B8B	0,139,139
-darkgoldenrod	#B8860B	184,134,11
-darkgray	#A9A9A9	169,169,169
-darkgreen	#006400	0,100,0
-darkgrey	#A9A9A9	169,169,169
-darkkhaki	#BDB76B	189,183,107
-darkmagenta	#8B008B	139,0,139
-darkolivegreen	#556B2F	85,107,47
-darkorange	#FF8C00	255,140,0
-darkorchid	#9932CC	153,50,204
-darkred	#8B0000	139,0,0
-darksalmon	#E9967A	233,150,122
-darkseagreen	#8FBC8F	143,188,143
-darkslateblue	#483D8B	72,61,139
-darkslategray	#2F4F4F	47,79,79
-darkslategrey	#2F4F4F	47,79,79
-darkturquoise	#00CED1	0,206,209
-darkviolet	#9400D3	148,0,211
-deeppink	#FF1493	255,20,147
-deepskyblue	#00BFFF	0,191,255
-dimgray	#696969	105,105,105
-dimgrey	#696969	105,105,105
-dodgerblue	#1E90FF	30,144,255
-firebrick	#B22222	178,34,34
-floralwhite	#FFFAF0	255,250,240
-forestgreen	#228B22	34,139,34
-fuchsia	#FF00FF	255,0,255
-gainsboro	#DCDCDC	220,220,220
-ghostwhite	#F8F8FF	248,248,255
-gold	#FFD700	255,215,0
-goldenrod	#DAA520	218,165,32
-gray	#808080	128,128,128
-green	#008000	0,128,0
-greenyellow	#ADFF2F	173,255,47
-grey	#808080	128,128,128
-honeydew	#F0FFF0	240,255,240
-hotpink	#FF69B4	255,105,180
-indianred	#CD5C5C	205,92,92
-indigo	#4B0082	75,0,130
-ivory	#FFFFF0	255,255,240
-khaki	#F0E68C	240,230,140
-lavender	#E6E6FA	230,230,250
-lavenderblush	#FFF0F5	255,240,245
-lawngreen	#7CFC00	124,252,0
-lemonchiffon	#FFFACD	255,250,205
-lightblue	#ADD8E6	173,216,230
-lightcoral	#F08080	240,128,128
-lightcyan	#E0FFFF	224,255,255
-lightgoldenrodyellow	#FAFAD2	250,250,210
-lightgray	#D3D3D3	211,211,211
-lightgreen	#90EE90	144,238,144
-lightgrey	#D3D3D3	211,211,211
-lightpink	#FFB6C1	255,182,193
-lightsalmon	#FFA07A	255,160,122
-lightseagreen	#20B2AA	32,178,170
-lightskyblue	#87CEFA	135,206,250
-lightslategray	#778899	119,136,153
-lightslategrey	#778899	119,136,153
-lightsteelblue	#B0C4DE	176,196,222
-lightyellow	#FFFFE0	255,255,224
-lime	#00FF00	0,255,0
-limegreen	#32CD32	50,205,50
-linen	#FAF0E6	250,240,230
-magenta	#FF00FF	255,0,255
-maroon	#800000	128,0,0
-mediumaquamarine	#66CDAA	102,205,170
-mediumblue	#0000CD	0,0,205
-mediumorchid	#BA55D3	186,85,211
-mediumpurple	#9370DB	147,112,219
-mediumseagreen	#3CB371	60,179,113
-mediumslateblue	#7B68EE	123,104,238
-mediumspringgreen	#00FA9A	0,250,154
-mediumturquoise	#48D1CC	72,209,204
-mediumvioletred	#C71585	199,21,133
-midnightblue	#191970	25,25,112
-mintcream	#F5FFFA	245,255,250
-mistyrose	#FFE4E1	255,228,225
-moccasin	#FFE4B5	255,228,181
-navajowhite	#FFDEAD	255,222,173
-navy	#000080	0,0,128
-oldlace	#FDF5E6	253,245,230
-olive	#808000	128,128,0
-olivedrab	#6B8E23	107,142,35
-orange	#FFA500	255,165,0
-orangered	#FF4500	255,69,0
-orchid	#DA70D6	218,112,214
-palegoldenrod	#EEE8AA	238,232,170
-palegreen	#98FB98	152,251,152
-paleturquoise	#AFEEEE	175,238,238
-palevioletred	#DB7093	219,112,147
-papayawhip	#FFEFD5	255,239,213
-peachpuff	#FFDAB9	255,218,185
-peru	#CD853F	205,133,63
-pink	#FFC0CB	255,192,203
-plum	#DDA0DD	221,160,221
-powderblue	#B0E0E6	176,224,230
-purple	#800080	128,0,128
-rebeccapurple	#663399	102,51,153
-red	#FF0000	255,0,0
-rosybrown	#BC8F8F	188,143,143
-royalblue	#4169E1	65,105,225
-saddlebrown	#8B4513	139,69,19
-salmon	#FA8072	250,128,114
-sandybrown	#F4A460	244,164,96
-seagreen	#2E8B57	46,139,87
-seashell	#FFF5EE	255,245,238
-sienna	#A0522D	160,82,45
-silver	#C0C0C0	192,192,192
-skyblue	#87CEEB	135,206,235
-slateblue	#6A5ACD	106,90,205
-slategray	#708090	112,128,144
-slategrey	#708090	112,128,144
-snow	#FFFAFA	255,250,250
-springgreen	#00FF7F	0,255,127
-steelblue	#4682B4	70,130,180
-tan	#D2B48C	210,180,140
-teal	#008080	0,128,128
-thistle	#D8BFD8	216,191,216
-tomato	#FF6347	255,99,71
-turquoise	#40E0D0	64,224,208
-violet	#EE82EE	238,130,238
-wheat	#F5DEB3	245,222,179
-white	#FFFFFF	255,255,255
-whitesmoke	#F5F5F5	245,245,245
-yellow	#FFFF00	255,255,0
-yellowgreen	#9ACD32	154,205,50';
+$string = '
+<td style="color:white; background:rgb(124,124,124);"></td>
+<td style="color:white; background:rgb(0,0,252);"></td>
+<td style="color:white; background:rgb(0,0,188);"></td>
+<td style="color:white; background:rgb(68,40,188);"></td>
+<td style="color:white; background:rgb(148,0,132);"></td>
+<td style="color:white; background:rgb(168,0,32);"></td>
+<td style="color:white; background:rgb(168,16,0);"></td>
+<td style="color:white; background:rgb(136,20,0);"></td>
+<td style="color:white; background:rgb(80,48,0);"></td>
+<td style="color:white; background:rgb(0,120,0);"></td>
+<td style="color:white; background:rgb(0,104,0);"></td>
+<td style="color:white; background:rgb(0,88,0);"></td>
+<td style="color:white; background:rgb(0,64,88);"></td>
+<td style="color:white; background:rgb(0,0,0);"></td>
+<td style="color:white; background:rgb(0,0,0);"></td>
+<td style="color:white; background:rgb(0,0,0);"></td>
+</tr>
+<tr>
+<td>10h</td>
+<td style="color:white; background:rgb(188,188,188);"></td>
+<td style="color:white; background:rgb(0,120,248);"></td>
+<td style="color:white; background:rgb(0,88,248);"></td>
+<td style="color:white; background:rgb(104,68,252);"></td>
+<td style="color:white; background:rgb(216,0,204);"></td>
+<td style="color:white; background:rgb(228,0,88);"></td>
+<td style="color:white; background:rgb(248,56,0);"></td>
+<td style="color:white; background:rgb(228,92,16);"></td>
+<td style="color:white; background:rgb(172,124,0);"></td>
+<td style="color:white; background:rgb(0,184,0);"></td>
+<td style="color:white; background:rgb(0,168,0);"></td>
+<td style="color:white; background:rgb(0,168,68);"></td>
+<td style="color:white; background:rgb(0,136,136);"></td>
+<td style="color:white; background:rgb(0,0,0);"></td>
+<td style="color:white; background:rgb(0,0,0);"></td>
+<td style="color:white; background:rgb(0,0,0);"></td>
+</tr>
+<tr>
+<td>20h</td>
+<td style="color:white; background:rgb(248,248,248);"></td>
+<td style="color:white; background:rgb(60,188,252);"></td>
+<td style="color:white; background:rgb(104,136,252);"></td>
+<td style="color:white; background:rgb(152,120,248);"></td>
+<td style="color:white; background:rgb(248,120,248);"></td>
+<td style="color:white; background:rgb(248,88,152);"></td>
+<td style="color:white; background:rgb(248,120,88);"></td>
+<td style="color:white; background:rgb(252,160,68);"></td>
+<td style="color:white; background:rgb(248,184,0);"></td>
+<td style="color:white; background:rgb(184,248,24);"></td>
+<td style="color:white; background:rgb(88,216,84);"></td>
+<td style="color:white; background:rgb(88,248,152);"></td>
+<td style="color:white; background:rgb(0,232,216);"></td>
+<td style="color:white; background:rgb(120,120,120);"></td>
+<td style="color:white; background:rgb(0,0,0);"></td>
+<td style="color:white; background:rgb(0,0,0);"></td>
+</tr>
+<tr>
+<td>30h</td>
+<td style="color:white; background:rgb(252,252,252);"></td>
+<td style="color:white; background:rgb(164,228,252);"></td>
+<td style="color:white; background:rgb(184,184,248);"></td>
+<td style="color:white; background:rgb(216,184,248);"></td>
+<td style="color:white; background:rgb(248,184,248);"></td>
+<td style="color:white; background:rgb(248,164,192);"></td>
+<td style="color:white; background:rgb(240,208,176);"></td>
+<td style="color:white; background:rgb(252,224,168);"></td>
+<td style="color:white; background:rgb(248,216,120);"></td>
+<td style="color:white; background:rgb(216,248,120);"></td>
+<td style="color:white; background:rgb(184,248,184);"></td>
+<td style="color:white; background:rgb(184,248,216);"></td>
+<td style="color:white; background:rgb(0,252,252);"></td>
+<td style="color:white; background:rgb(216,216,216);"></td>
+<td style="color:white; background:rgb(0,0,0);"></td>
+<td style="color:white; background:rgb(0,0,0);"></td>
+';
 
 $colors=array();
 
 foreach(explode(PHP_EOL, $string) as $row) {
-    $row=explode(' ', preg_replace('#\s+#', ' ', $row));
-    $colors[]="'".$row[0]."'=>0x".strtolower(substr($row[1],-6));
+    if(strlen($row)<32) {
+        continue;
+    }
+
+    $color = substr(substr($row, 35), 0, -8);
+    $color = Color::create($color);
+    $colors[]="0x".strtolower(substr($color,-6));
 }
 
-echo '['.implode(',',$colors).']';
+echo '['.implode(',',array_unique($colors)).']';
+
 
 */
 
 
+/*
+ * for testing
+ */
+
+/*
+$color=Color::create($this->imageObject, $x, $y);
+print_r($color->getValue());
+echo PHP_EOL;
+
+$color = imagecolorat($this->imageObject, $x, $y);
+$color5=Color::create($color);
+print_r($color5->getValue());
+echo PHP_EOL;
+
+$rgb = imagecolorsforindex($this->imageObject, $color);
+
+$color2=Color::create($rgb);
+print_r($color2->getValue());
+echo PHP_EOL;
+$this_Rgb   = sprintf('#%02X%02X%02X', $rgb['red'], $rgb['green'], $rgb['blue']);
+
+$color3=Color::create($this_Rgb);
+print_r($color3->getValue());
+echo PHP_EOL;
+print_r($color3->getHex());
+echo PHP_EOL;
+print_r($color3->getRgb());
+echo PHP_EOL;
+echo $color3;
+echo PHP_EOL;
+print_r($color3->hex);
+echo PHP_EOL;
+print_r($color3->rgb);
+echo PHP_EOL;
+print_r($color3->int);
+echo PHP_EOL;
+print_r($color3->asd);
+echo PHP_EOL;
+
+$color4=Color::create(0x834B0E);
+print_r($color4->getValue());
+echo PHP_EOL;
+
+$color6=Color::create($color4);
+print_r($color6->getValue());
+echo PHP_EOL;
+
+echo PHP_EOL.'||';
+$color7=Color::create(0xabcdef);
+echo $color7->negate()->hex;
+echo PHP_EOL;
+echo PHP_EOL.'||';
+echo PHP_EOL.'||';
+echo PHP_EOL;
+echo $color7->compare(336699);
+
+*/
