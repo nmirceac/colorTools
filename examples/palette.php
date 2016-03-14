@@ -1,4 +1,4 @@
-<?php require_once('../Palette.php');
+<?php require_once('../src/Palette.php');
 
 function showPalette($palette = Palette::PALETTE_COLOR_TOOLS)
 {

@@ -1,0 +1,26 @@
+{
+    "name": "nmirceac/colorTools",
+    "type": "library",
+    "description": "Color Tools for PHP 5.4",
+    "keywords": ["colors","palette", "histogram"],
+    "homepage": "https://github.com/nmirceac/colorTools",
+    "license": "GNU",
+    "minimum-stablility": "stable",
+    "authors": [
+        {
+            "name": "Mircea Nicolae",
+            "email": "mircea@nicolae.co.za",
+            "homepage": "https://github.com/nmirceac",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": ">=5.4.0",
+        "ext-gd": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Nmirceac\\ColorTools\\": "src/"
+        }
+    }
+}

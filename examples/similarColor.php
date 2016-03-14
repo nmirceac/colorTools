@@ -1,4 +1,4 @@
-<?php require_once('../Color.php');
+<?php require_once('../src/Color.php');
 
 function showColorComparisonRow($color = null) {
     if(is_null($color)) {
