@@ -120,7 +120,7 @@ class Palette
 
         for($x=0; $x<=($image->width - $precision); $x+=$precision) {
             for($y=0; $y<=($image->height - $precision); $y+=$precision) {
-                $color = Color::create($image->getImageObject(), $x, $y)->findSimilar($this->comparisonType, $palette)->hex;
+                $color = Color::create($image->getImageObject(), $x, $y)->findSimilar($this->comparisonType, $palette, true)->hex;
                 if(!isset($paletteQ[$color])) {
                     $paletteQ[$color] =pow($precision,2);
                 } else {

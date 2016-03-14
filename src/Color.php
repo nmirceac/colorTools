@@ -181,16 +181,24 @@ class Color
             return $this->getRgb();
         }
 
-        if($param == 'red') {
+        if($param == 'red' or $param == 'r') {
             return $this->getRed();
         }
 
-        if($param == 'green') {
+        if($param == 'green' or $param == 'g') {
             return $this->getGreen();
         }
 
-        if($param == 'blue') {
+        if($param == 'blue' or $param == 'b') {
             return $this->getBlue();
+        }
+
+        if(in_array($param, ['grayscale', 'gray', 'mono'])) {
+            return $this->getGrayscale();
+        }
+
+        if($param == 'hsl') {
+            return $this->getHsl();
         }
 
         if($param == 'int') {
@@ -210,6 +218,18 @@ class Color
     public function __set($param, $value) {
         if($param == 'name') {
             $this->name = $value;
+        }
+
+        if($param == 'r' or $param=='red') {
+            $this->setRed($value);
+        }
+
+        if($param == 'g' or $param=='green') {
+            $this->setGreen($value);
+        }
+
+        if($param == 'b' or $param=='blue') {
+            $this->setBlue($value);
         }
     }
 
@@ -233,14 +253,29 @@ class Color
         return $this->value >> 16 & 0xFF;
     }
 
+    public function setRed($value)
+    {
+        $this->value -= $this->red * 256 * 256 + $value * 256 * 256;
+    }
+
     public function getGreen()
     {
         return $this->value >> 8 & 0xFF;
     }
 
+    public function setGreen($value)
+    {
+        $this->value -= $this->green * 256 + $value * 256;
+    }
+
     public function getBlue()
     {
         return $this->value & 0xFF;
+    }
+
+    public function setBlue($value)
+    {
+        $this->value -= $this->blue + $value;
     }
 
     public function getRgb()
@@ -249,6 +284,52 @@ class Color
         $rgb['blue']=$this->getBlue();
         $rgb['green']=$this->getGreen();
         return $rgb;
+    }
+
+    public function getGrayscale()
+    {
+        return ceil(($this->red + $this->green + $this->blue) / 3);
+    }
+
+    //http://www.rapidtables.com/convert/color/rgb-to-hsl.htm
+
+    //http://www.rapidtables.com/convert/color/hsl-to-rgb.htm
+
+    //http://www.easyrgb.com/?X=MATH
+
+    public function getHsl()
+    {
+        $r = $this->r / 255;
+        $g = $this->g / 255;
+        $b = $this->b / 255;
+
+
+        $cMax = max($r, $g, $b);
+        $cMin = min($r, $g, $b);
+        $cDif = $cMax - $cMin;
+
+        $lightness = ($cMin + $cMax) / 2;
+
+        if($cDif == 0) {
+            $hue = 0;
+            $saturation = 0;
+        } else if($cMax == $r) {
+            $hue = ($g - $b)/$cDif;
+            if($hue < 0) {
+                $hue = 6 + $hue;
+            }
+            $hue = deg2rad(60) * $hue;
+        } else if($cMax == $g) {
+            $hue = deg2rad(60) * ($b - $r)/$cDif + 2;
+        } else if($cMax == $g) {
+            $hue = deg2rad(60) * ($r - $g)/$cDif + 4;
+        }
+
+        if($cDif != 0) {
+            $saturation = $cDif / (2 - $cMin - $cMax);
+        }
+
+        return ['h'=> rad2deg($hue), 's'=>round($saturation*100,2), 'l'=>round($lightness*100, 2)];
     }
 
     public function negate()
@@ -271,12 +352,22 @@ class Color
         }
     }
 
-    public function findSimilar($comparisonType = null, $collection = null)
+    public function findSimilar($comparisonType = null, $collection = null, $avoidBlacks=false) //in a non-racist way
     {
         $comparisonType = (is_null($comparisonType)) ? Color::COMPARE_FAST : $comparisonType;
 
         if(is_null($collection)) {
             $collection = $this->cssColors;
+        }
+
+        if($avoidBlacks)
+        {
+            $originalValue = $this->value;
+            if(max($this->rgb) < 64 and min($this->rgb)<8) {
+                foreach($this->rgb as $channel => $value) {
+                    $this->$channel = $value*=1.7;
+                }
+            }
         }
 
         $minDiff = 0xffffff;
@@ -292,6 +383,10 @@ class Color
                 $similarColor = $color;
             }
             //echo "Comparing ".$this->hex." to $name - ".$color->hex." - DIFF $diff / $minDiff MIN\n";
+        }
+
+        if($avoidBlacks) {
+            $this->value = $originalValue;
         }
 
         $similarColor -> name = $colorName;
