@@ -20,7 +20,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Nmirceac\\ColorTools\\": "src/"
+            "ColorTools\\": "src/"
         }
     }
 }

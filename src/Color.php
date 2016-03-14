@@ -1,8 +1,4 @@
-<?php
-
-require_once('Color.php');
-require_once('Image.php');
-require_once('Palette.php');
+<?php namespace ColorTools;
 
 class Color
 {

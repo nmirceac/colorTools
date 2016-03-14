@@ -1,4 +1,14 @@
-<?php require_once('../src/Palette.php');
+<?php
+
+if(!file_exists('../vendor/autoload.php')) {
+    throw new \Exception('Try running composer update first in '.realpath('..'));
+} else {
+    require_once('../vendor/autoload.php');
+}
+
+use ColorTools\Palette as Palette;
+use ColorTools\Color as Color;
+use ColorTools\Image as Image;
 
 function showPalette($palette = Palette::PALETTE_COLOR_TOOLS)
 {
