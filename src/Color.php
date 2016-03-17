@@ -104,7 +104,7 @@ class Color
                 break;
 
             case 'string':
-                $color=trim($color, '#\r\n\t ');
+                $color=trim($color, "# \r\n\t");
 
                 if(ctype_xdigit($color)) {
                     if(strlen($color) == 3) {
@@ -133,6 +133,8 @@ class Color
                             $this->value = $color[0] * 256*256 + $color[1] * 256 + $color[2];
                         }
                     }
+                } elseif(in_array(strtolower($color), $this->cssColors)) {
+                    $this->value = $this->cssColors[strtolower($color)];
                 } else {
                     throw new \Exception('This is not hex, for support of other string formats, just let me know...');
                 }
@@ -154,7 +156,7 @@ class Color
                 break;
 
             case 'object':
-                if(get_class($color) == 'Color') {
+                if(get_class($color) == 'ColorTools\Color') {
                     $this->value = $color->int;
                 } else {
                     throw new \Exception('Cannot handle object of type '.get_class($color));
@@ -178,7 +180,8 @@ class Color
         }
 
         if($param == 'rgb') {
-            return $this->getRgb();
+            $rgb = $this->getRgb();
+            return 'rgb('.implode(', ', $rgb).')';
         }
 
         if($param == 'red' or $param == 'r') {
@@ -198,7 +201,11 @@ class Color
         }
 
         if($param == 'hsl') {
-            return $this->getHsl();
+            $hsl = $this->getHsl();
+            $hsl['hue']=$hsl['hue'];
+            $hsl['saturation']=round($hsl['saturation']*100).'%';
+            $hsl['lightness']=round($hsl['lightness']*100).'%';
+            return 'hsl('.implode(', ', $hsl).')';
         }
 
         if($param == 'int') {
@@ -250,12 +257,17 @@ class Color
 
     public function getRed()
     {
-        return $this->value >> 16 & 0xFF;
+        return ($this->value >> 16) & 0xFF;
     }
 
     public function setRed($value)
     {
-        $this->value -= $this->red * 256 * 256 + $value * 256 * 256;
+        if(is_numeric($value) and $value >= 0 and $value<256) {
+            $this->value += (ceil($value) - $this->red) * 256 * 256;
+            return $this;
+        } else {
+            throw new \Exception('There is something wrong with this red: '.print_r($value, true));
+        }
     }
 
     public function getGreen()
@@ -265,7 +277,12 @@ class Color
 
     public function setGreen($value)
     {
-        $this->value -= $this->green * 256 + $value * 256;
+        if(is_numeric($value) and $value >= 0 and $value<256) {
+            $this->value += (ceil($value) - $this->green) * 256;
+            return $this;
+        } else {
+            throw new \Exception('There is something wrong with this green: '.print_r($value, true));
+        }
     }
 
     public function getBlue()
@@ -275,15 +292,37 @@ class Color
 
     public function setBlue($value)
     {
-        $this->value -= $this->blue + $value;
+        if(is_numeric($value) and $value >= 0 and $value<256) {
+            $this->value += (ceil($value) - $this->blue);
+            return $this;
+        } else {
+            throw new \Exception('There is something wrong with this blue: '.print_r($value, true));
+        }
     }
 
     public function getRgb()
     {
         $rgb['red']=$this->getRed();
-        $rgb['blue']=$this->getBlue();
         $rgb['green']=$this->getGreen();
+        $rgb['blue']=$this->getBlue();
         return $rgb;
+    }
+
+    public function setRgb($red = null, $green = null, $blue = null)
+    {
+        if(!is_null($red)) {
+            $this->setRed($red);
+        }
+
+        if(!is_null($green)) {
+            $this->setGreen($green);
+        }
+
+        if(!is_null($blue)) {
+            $this->setBlue($blue);
+        }
+
+        return $this;
     }
 
     public function getGrayscale()
@@ -320,22 +359,194 @@ class Color
             }
             $hue = deg2rad(60) * $hue;
         } else if($cMax == $g) {
-            $hue = deg2rad(60) * ($b - $r)/$cDif + 2;
-        } else if($cMax == $g) {
-            $hue = deg2rad(60) * ($r - $g)/$cDif + 4;
+            $hue = deg2rad(60) * (($b - $r)/$cDif + 2);
+        } else if($cMax == $b) {
+            $hue = deg2rad(60) * (($r - $g)/$cDif + 4);
         }
 
         if($cDif != 0) {
-            $saturation = $cDif / (2 - $cMin - $cMax);
+            $saturation = $cDif / (1 - abs(2 * $lightness - 1));
         }
 
-        return ['h'=> rad2deg($hue), 's'=>round($saturation*100,2), 'l'=>round($lightness*100, 2)];
+        return ['hue'=> round(rad2deg($hue)), 'saturation'=>$saturation, 'lightness'=>$lightness];
+    }
+
+    public function setHsl($hue=null, $saturation=null, $lightness=null)
+    {
+        if(is_array($hue)) {
+            if(isset($hue['hue']) and isset($hue['saturation']) and isset($hue['lightness'])) {
+                $hsl=$hue;
+                $hsl['saturation'] = $hue['saturation'];
+                $hsl['lightness'] = $hue['lightness'];
+            } else if (isset($hue['h']) and isset($hue['s']) and isset($hue['l'])) {
+                $hsl['hue'] = $hue['h'];
+                $hsl['saturation'] = $hue['s'];
+                $hsl['lightness'] = $hue['l'];
+            } else {
+                throw new \Exception('Don\'t understand this hsl array: '.print_r($hue, true));
+            }
+        } else if (!is_null($hue) and !is_null($saturation) and !is_null($lightness)) {
+            $hsl['hue'] = $hue;
+            $hsl['saturation'] = $saturation;
+            $hsl['lightness'] = $lightness;
+        } else {
+            throw new \Exception('Can\'t get this hsl');
+        }
+
+        if(strpos($hsl['saturation'],'%')) {
+            $hsl['saturation'] = trim($hsl['saturation'],"\r\n\t %") / 100;
+        }
+
+        if(strpos($hsl['lightness'],'%')) {
+            $hsl['lightness'] = trim($hsl['lightness'],"\r\n\t %") / 100;
+        }
+
+        $c = (1 - abs(2*$hsl['lightness'] - 1)) * $hsl['saturation'];
+        $x = $c * (1 - abs(fmod(deg2rad($hsl['hue']) / deg2rad(60), 2) - 1));
+        $m = $hsl['lightness'] - $c/2;
+
+        if($hsl['hue'] < 60) {
+            $r = $c;
+            $g = $x;
+            $b = 0;
+        } else if($hsl['hue'] < 120) {
+            $r = $x;
+            $g = $c;
+            $b = 0;
+        } else if($hsl['hue'] < 180) {
+            $r = 0;
+            $g = $c;
+            $b = $x;
+        } else if($hsl['hue'] < 240) {
+            $r = 0;
+            $g = $x;
+            $b = $c;
+        } else if($hsl['hue'] < 300) {
+            $r = $x;
+            $g = 0;
+            $b = $c;
+        } else {
+            $r = $c;
+            $g = 0;
+            $b = $x;
+        }
+
+        $r = round(($r+$m) * 255);
+        $g = round(($g+$m) * 255);
+        $b = round(($b+$m) * 255);
+
+        $this->setRed($r);
+        $this->setGreen($g);
+        $this->setBlue($b);
+
+        return $this;
     }
 
     public function negate()
     {
         $this->value = 0xffffff - $this->value;
         return $this;
+    }
+
+    public function complement()
+    {
+        return $this->spin(180);
+    }
+
+    public function mix($secondColour, $weight=0.5)
+    {
+        if($weight>=1) { //not sure if no one will ever mix 100%
+            $weight/=100;
+        }
+
+        $weight=min($weight, 1);
+
+        if($weight<0) {
+            $weight=0;
+        }
+
+        $secondColour = Color::create($secondColour);
+
+        $this->setRed(ceil($this->r * (1 - $weight) + $secondColour->r * $weight));
+        $this->setGreen(ceil($this->g * (1 - $weight) + $secondColour->g * $weight));
+        $this->setBlue(ceil($this->b * (1 - $weight) + $secondColour->b * $weight));
+
+        return $this;
+    }
+
+    public function tint($weight=0.1)
+    {
+        return $this->mix(0xffffff, $weight);
+    }
+
+    public function shade($weight=0.1)
+    {
+        return $this->mix(0, $weight);
+    }
+
+    public function grayscale()
+    {
+        return $this->desaturate(100);
+    }
+
+    public function spin($hueAngle=0)
+    {
+        $hsl = $this->getHsl();
+        $hsl['hue'] += $hueAngle;
+        while($hsl['hue'] < 0) {
+            $hsl['hue']+= 360;
+        }
+        $hsl['hue'] = $hsl['hue'] % 360;
+        $this->setHsl($hsl);
+        return $this;
+    }
+
+    public function saturate($saturationAdjustement=0)
+    {
+        $hsl = $this->getHsl();
+        if($saturationAdjustement>=1 or $saturationAdjustement<=-1) { //not sure if no one will ever [de]saturate 100%
+            $saturationAdjustement/=100;
+        }
+        $hsl['saturation'] += $saturationAdjustement;
+
+        if($hsl['saturation']>1) {
+            $hsl['saturation']=1;
+        }
+        if($hsl['saturation']<0) {
+            $hsl['saturation']=0;
+        }
+
+        $this->setHsl($hsl);
+        return $this;
+    }
+
+    public function desaturate($saturationAdjustement=0)
+    {
+        return $this->saturate(0-$saturationAdjustement);
+    }
+
+    public function lighten($lightnessAdjustement=0)
+    {
+        $hsl = $this->getHsl();
+        if($lightnessAdjustement>=1 or $lightnessAdjustement<=-1) { //not sure if no one will ever [de]lighten 100%
+            $lightnessAdjustement/=100;
+        }
+        $hsl['lightness'] += $lightnessAdjustement;
+
+        if($hsl['lightness']>1) {
+            $hsl['lightness']=1;
+        }
+        if($hsl['lightness']<0) {
+            $hsl['lightness']=0;
+        }
+
+        $this->setHsl($hsl);
+        return $this;
+    }
+
+    public function darken($lightnessAdjustement=0)
+    {
+        return $this->lighten(0-$lightnessAdjustement);
     }
 
     public function compare($color, $comparisonType = Color::COMPARE_FAST)
@@ -354,7 +565,7 @@ class Color
 
     public function findSimilar($comparisonType = null, $collection = null, $avoidBlacks=false) //in a non-racist way
     {
-        $comparisonType = (is_null($comparisonType)) ? Color::COMPARE_FAST : $comparisonType;
+        $comparisonType = (is_null($comparisonType)) ? Color::COMPARE_GREAT : $comparisonType;
 
         if(is_null($collection)) {
             $collection = $this->cssColors;
@@ -363,10 +574,8 @@ class Color
         if($avoidBlacks)
         {
             $originalValue = $this->value;
-            if(max($this->rgb) < 64 and min($this->rgb)<8) {
-                foreach($this->rgb as $channel => $value) {
-                    $this->$channel = $value*=1.7;
-                }
+            if(max($this->getRgb()) <= 50 and min($this->getRgb())<=12) {
+                $this->lighten(25);
             }
         }
 

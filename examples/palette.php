@@ -26,7 +26,7 @@ function showImageAndPalette($imagePath, $precision=Palette::ADAPTIVE_PRECISION)
 {
     $start = microtime(true);
     $image = new Image($imagePath);
-    $palette = $image->getColors(Palette::PALETTE_COLOR_TOOLS, Color::COMPARE_GREAT, $precision);
+    $palette = $image->getColors(Palette::PALETTE_COLOR_TOOLS, Color::COMPARE_GREAT, $precision, 3);
 
     if($precision==Palette::ADAPTIVE_PRECISION) {
         $precision = 'adaptive precision';
@@ -41,7 +41,7 @@ function showImageAndPalette($imagePath, $precision=Palette::ADAPTIVE_PRECISION)
     <table style="border-collapse:collapse;width:600px;height:25px;font-size:12px;line-height:12px;margin:0;padding:0;">
         <tr>';
     foreach($palette as $hex=>$coverage) {
-        if($coverage>3) {
+        if($coverage>2) {
             echo '<td style="color:white;text-shadow:0 0 5px black;text-align:center;background-color:'.$hex.';
                     width:'.$coverage.'%;" title="%'.number_format($coverage,1).'">'
                     .number_format($coverage,1).
