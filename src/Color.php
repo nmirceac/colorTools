@@ -175,6 +175,8 @@ class Color
     }
 
     public function __get($param) {
+        $param=strtolower($param);
+
         if($param == 'hex') {
             return $this->getHex();
         }
@@ -200,6 +202,10 @@ class Color
             return $this->getGrayscale();
         }
 
+        if($param=='luma') {
+            return round($this->getLuma()*100).'%';
+        }
+
         if($param == 'hsl') {
             $hsl = $this->getHsl();
             $hsl['hue']=$hsl['hue'];
@@ -223,6 +229,8 @@ class Color
     }
 
     public function __set($param, $value) {
+        $param=strtolower($param);
+
         if($param == 'name') {
             $this->name = $value;
         }
@@ -442,10 +450,19 @@ class Color
         return $this;
     }
 
-    public function negate()
+    public function getLuma()
     {
-        $this->value = 0xffffff - $this->value;
-        return $this;
+        $luma['r'] = 0.2126 * $this->r / 255;
+        $luma['g'] = 0.7152 * $this->g / 255;
+        $luma['b'] = 0.0722 * $this->b / 255;
+        return array_sum($luma);
+    }
+
+    public function invert()
+    {
+        return $this->rgbTransformation(function($value) use ($weight) {
+            return 1 - $value;
+        });
     }
 
     public function complement()
@@ -453,7 +470,7 @@ class Color
         return $this->spin(180);
     }
 
-    public function mix($secondColour, $weight=0.5)
+    public function mix($secondColor, $weight=0.5)
     {
         if($weight>=1) { //not sure if no one will ever mix 100%
             $weight/=100;
@@ -465,13 +482,9 @@ class Color
             $weight=0;
         }
 
-        $secondColour = Color::create($secondColour);
-
-        $this->setRed(ceil($this->r * (1 - $weight) + $secondColour->r * $weight));
-        $this->setGreen(ceil($this->g * (1 - $weight) + $secondColour->g * $weight));
-        $this->setBlue(ceil($this->b * (1 - $weight) + $secondColour->b * $weight));
-
-        return $this;
+        return $this->rgbTransformation(function($value, $secondValue) use ($weight) {
+            return $value * (1 - $weight) + $secondValue * $weight;
+        }, $secondColor);
     }
 
     public function tint($weight=0.1)
@@ -549,6 +562,105 @@ class Color
         return $this->lighten(0-$lightnessAdjustement);
     }
 
+    public function rgbTransformation($transformation, $secondColor=null)
+    {
+        if(!is_null($secondColor)) {
+            $secondColor=Color::create($secondColor);
+        }
+        foreach(['red', 'green', 'blue'] as $channel) {
+            if(!is_null($secondColor)) {
+                $value = $transformation($this -> $channel / 255, $secondColor -> $channel / 255, $channel);
+            } else {
+                $value = $transformation($this -> $channel / 255, $channel);
+            }
+            $value = min($value, 1);
+            if($value<0) {
+                $value = 0;
+            }
+            $this -> $channel = round($value * 255);
+        }
+        return $this;
+    }
+
+    public function multiply($secondColor)
+    {
+        return $this->rgbTransformation(function($value, $secondValue) {
+            return $value * $secondValue;
+        }, $secondColor);
+    }
+
+    public function screen($secondColor)
+    {
+        return $this->rgbTransformation(function($value, $secondValue) {
+            return $value + $secondValue - ($value * $secondValue);
+        }, $secondColor);
+    }
+
+    public function overlay($secondColor)
+    {
+        return $this->rgbTransformation(function($value, $secondValue) {
+            $value *= 2;
+
+            if($value<=1) {
+                return $value * $secondValue;
+            } else {
+                $value -= 1;
+                return $value + $secondValue - ($value * $secondValue);
+            }
+        }, $secondColor);
+    }
+
+    public function softlight($secondColor)
+    {
+        return $this->rgbTransformation(function($value, $secondValue) {
+            $d = 1;
+            $e = $value;
+
+            if($secondValue > 0.5) {
+                $e = 1;
+                if($value > 0.25) {
+                    $d = sqrt($value);
+                } else {
+                    $d = ((16 * $value - 12) * $value + 4) * $value;
+                }
+            }
+            return $value - (1 - 2 * $secondValue) * $e * ($d - $value);
+        }, $secondColor);
+    }
+
+    public function hardlight($secondColor)
+    {
+        return Color::create($secondColor)->overlay($this);
+    }
+
+    public function difference($secondColor)
+    {
+        return $this->rgbTransformation(function($value, $secondValue) {
+            return abs($value - $secondValue);
+        }, $secondColor);
+    }
+
+    public function exclusion($secondColor)
+    {
+        return $this->rgbTransformation(function($value, $secondValue) {
+            return $value + $secondValue - 2 * $value * $secondValue;
+        }, $secondColor);
+    }
+
+    public function average($secondColor)
+    {
+        return $this->rgbTransformation(function($value, $secondValue) {
+            return ($value + $secondValue) / 2;
+        }, $secondColor);
+    }
+
+    public function negate($secondColor)
+    {
+        return $this->rgbTransformation(function($value, $secondValue) {
+            return 1 - abs($value + $secondValue - 1);
+        }, $secondColor);
+    }
+
     public function compare($color, $comparisonType = Color::COMPARE_FAST)
     {
         if(!$color instanceof Color) {
@@ -560,6 +672,32 @@ class Color
             return abs(pow($this->red - $color->red, $comparisonType))
             + abs(pow($this->green - $color->green, $comparisonType))
             + abs(pow($this->blue - $color->blue, $comparisonType));
+        }
+    }
+
+    //https://www.w3.org/TR/WCAG20/#contrast-ratiodef
+    public function findConstrast($darkColor=0x0, $lightColor=0xffffff, $threshold=50)
+    {
+        $darkColor=Color::create($darkColor);
+        $lightColor=Color::create($lightColor);
+
+        $darkContrast =  ($this->getLuma() > $darkColor->getLuma()) ?
+                            ($this->getLuma() + 0.05) / ($darkColor->getLuma() + 0.05) :
+                            ($darkColor->getLuma() + 0.05) / ($this->getLuma() + 0.05);
+
+        $lightContrast =  ($this->getLuma() > $lightColor->getLuma()) ?
+            ($this->getLuma() + 0.05) / ($lightColor->getLuma() + 0.05) :
+            ($lightColor->getLuma() + 0.05) / ($this->getLuma() + 0.05);
+
+        $lightContrast += $threshold/21;
+        $darkContrast -= $threshold/21;
+
+        echo '=|'.$darkContrast.' - '.$lightContrast.'|<br/>';
+
+        if($darkContrast > $lightContrast) {
+            return $darkColor;
+        } else {
+            return $lightColor;
         }
     }
 
@@ -610,7 +748,7 @@ class Color
 ### circular php unit test
 
 
-## http://serennu.com/colour/rgbtohsl.php
+## http://serennu.com/color/rgbtohsl.php
 
 ## https://en.wikipedia.org/wiki/HSL_and_HSV
 

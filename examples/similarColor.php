@@ -42,7 +42,7 @@ function showColorFunctions($color = null) {
 
     $gray = Color::create($color)->grayscale();
     $spin = Color::create($color)->spin(60);
-    $negate = Color::create($color)->negate();
+    $invert = Color::create($color)->invert();
     $complement = Color::create($color)->complement();
     $saturated = Color::create($color)->saturate(20);
     $desaturated = Color::create($color)->desaturate(20);
@@ -53,7 +53,7 @@ function showColorFunctions($color = null) {
           <td style="background-color: '.$color->hex.';">'.$color->hex.'</td>
           <td style="background-color: '.$gray->hex.';">'.$gray->hex.'</td>
           <td style="background-color: '.$spin->hex.';">'.$spin->hex.'</td>
-          <td style="background-color: '.$negate->hex.';">'.$negate->hex.'</td>
+          <td style="background-color: '.$invert->hex.';">'.$invert->hex.'</td>
           <td style="background-color: '.$complement->hex.';">'.$complement->hex.'</td>
           <td style="background-color: '.$saturated->hex.';">'.$saturated->hex.'</td>
           <td style="background-color: '.$desaturated->hex.';">'.$desaturated->hex.'</td>
@@ -70,7 +70,7 @@ function showColorMixing($color = null) {
     }
 
     $red = Color::create($color)->mix(Color::create('red'), 0.3);
-    $blue = Color::create($color)->mix(Color::create('green'), 0.3);
+    $blue = Color::create($color)->mix(Color::create('lime'), 0.3);
     $green = Color::create($color)->mix(Color::create('blue'), 0.3);
 
     $tint = Color::create($color)->tint(0.1);
@@ -96,25 +96,57 @@ function showColorBlending($color = null) {
         $color=Color::create(rand(0, 0xffffff));
     }
 
-    $multiply = Color::create($color)->mix(Color::create('red'), 0.3);
-    $blue = Color::create($color)->mix(Color::create('green'), 0.3);
-    $green = Color::create($color)->mix(Color::create('blue'), 0.3);
+    $multiply = Color::create($color)->multiply('#888');
+    $screen = Color::create($color)->screen('#888');
+    $overlayRed = Color::create($color)->overlay(Color::create('red'));
+    $overlayGreen = Color::create($color)->overlay(Color::create('lime'));
+    $overlayBlue = Color::create($color)->overlay(Color::create('blue'));
+    $softlight = Color::create($color)->softlight('#888');
+    $hardlight = Color::create($color)->hardlight('#888');
 
-    $tint = Color::create($color)->tint(0.1);
-    $tint2 = Color::create($color)->tint(0.3);
-    $shade = Color::create($color)->shade(0.1);
-    $shade2 = Color::create($color)->shade(0.3);
 
     echo '<tr>
           <td style="background-color: '.$color->hex.';">'.$color->hex.'</td>
           <td style="background-color: '.$color->hsl.';">'.$color->hsl.'</td>
           <td style="background-color: '.$multiply->hex.';">'.$multiply->hex.'</td>
-          <td style="background-color: '.$blue->hex.';">'.$blue->hex.'</td>
-          <td style="background-color: '.$green->hex.';">'.$green->hex.'</td>
-          <td style="background-color: '.$tint->hex.';">'.$tint->hex.'</td>
-          <td style="background-color: '.$tint2->hex.';">'.$tint2->hex.'</td>
-          <td style="background-color: '.$shade->hex.';">'.$shade->hex.'</td>
-          <td style="background-color: '.$shade2->hex.';">'.$shade2->hex.'</td>
+          <td style="background-color: '.$screen->hex.';">'.$screen->hex.'</td>
+          <td style="background-color: '.$overlayRed->hex.';">'.$overlayRed->hex.'</td>
+          <td style="background-color: '.$overlayGreen->hex.';">'.$overlayGreen->hex.'</td>
+          <td style="background-color: '.$overlayBlue->hex.';">'.$overlayBlue->hex.'</td>
+          <td style="background-color: '.$softlight->hex.';">'.$softlight->hex.'</td>
+          <td style="background-color: '.$hardlight->hex.';">'.$hardlight->hex.'</td>
+          </tr>';
+}
+
+function showColorBlending2($color = null) {
+    if(is_null($color)) {
+        $color=Color::create(rand(0, 0xffffff));
+    }
+
+    $difference = Color::create($color)->difference('#888');
+    $exclusion = Color::create($color)->exclusion('#888');
+    $average = Color::create($color)->average('#888');
+    $negate = Color::create($color)->negate('#888');
+    $contrast = Color::create($color)->findConstrast();
+
+
+    $overlayRed = Color::create($color)->overlay(Color::create('red'));
+    $overlayGreen = Color::create($color)->overlay(Color::create('lime'));
+    $overlayBlue = Color::create($color)->overlay(Color::create('blue'));
+    $softlight = Color::create($color)->softlight('#888');
+    $hardlight = Color::create($color)->hardlight('#888');
+
+
+    echo '<tr>
+          <td style="background-color: '.$color->hex.';">'.$color->hex.'</td>
+          <td style="background-color: '.$color->hsl.';">'.$color->hsl.'</td>
+          <td style="background-color: '.$difference->hex.';">'.$difference->hex.'</td>
+          <td style="background-color: '.$exclusion->hex.';">'.$exclusion->hex.'</td>
+          <td style="background-color: '.$average->hex.';">'.$average->hex.'</td>
+          <td style="background-color: '.$negate->hex.';">'.$negate->hex.'</td>
+          <td style="background-color: '.'#fff'.';">'.$color->luma.'</td>
+          <td style="background-color: '.$color->hex.'; color: '.$contrast->hex.';">'.$contrast->hex.'</td>
+          <td style="background-color: '.$hardlight->hex.';">'.$hardlight->hex.'</td>
           </tr>';
 }
 
@@ -149,7 +181,7 @@ function showColorBlending($color = null) {
     <tr><td colspan="8">&nbsp;</td></tr>
     <tr>
         <th>Random color</th><th>Grayscale</th><th>Spin 60</th>
-        <th>Negate</th><th>Complement</th>
+        <th>Invert</th><th>Complement</th>
         <th>Saturation +20%</th><th>Desaturation -20%</th>
         <th>Lighten +10%</th><th>Darken -10%</th>
     </tr>
@@ -177,16 +209,32 @@ function showColorBlending($color = null) {
     <tr><td colspan="8">&nbsp;</td></tr>
     <tr>
         <th>Random color</th><th>HSL</th>
-        <th>Multiply (gray)</th><th>Green mix 30%</th><th>Blue mix 30%</th>
-        <th>Tint 10%</th><th>Tint 30%</th>
-        <th>Shade 10%</th><th>Shade 30%</th>
+        <th>Multiply (#888)</th><th>Screen (#888)</th>
+        <th>Overlay red</th><th>Overlay green</th><th>Overlay blue</th>
+        <th>Softlight</th><th>Hardlight</th>
     </tr>
     <?php
     showColorBlending(Color::create(0xffffff));
+    showColorBlending(Color::create('#ff6600'));
     for($i=0;$i<10;$i++) {
         showColorBlending();
     }
-    showColorBlending(Color::create(0));
+    showColorBlending2(Color::create(0));
+    ?>
+    <tr><td colspan="8">&nbsp;</td></tr>
+    <tr>
+        <th>Random color</th><th>HSL</th>
+        <th>Difference (#888)</th><th>Exclusion (#888)</th>
+        <th>Average (#888)</th><th>Negate(#888)</th><th>Luma</th>
+        <th>Contrast</th><th>Hardlight</th>
+    </tr>
+    <?php
+    showColorBlending2(Color::create(0xffffff));
+    showColorBlending2(Color::create('#ff6600'));
+    for($i=0;$i<10;$i++) {
+        showColorBlending2();
+    }
+    showColorBlending2(Color::create(0));
     ?>
 </table>
 </body>
