@@ -80,7 +80,6 @@ class Color
                          */
                         throw new \Exception('Missing pixel coordinates');
                     }
-
                 } else {
                     throw new \Exception('Unknown resource of type '.get_resource_type($color));
                 }
@@ -158,6 +157,23 @@ class Color
             case 'object':
                 if(get_class($color) == 'ColorTools\Color') {
                     $this->value = $color->int;
+                } else if(get_class($color) == 'Imagick') {
+                    /*
+                     * $color is a Imagick image - in that case we also need the X, Y coordinates of the pixel
+                     * we want to analyze
+                     */
+                    if((is_int($param1) and $param1>=0) and (is_int($param2) and $param2>=0)) {
+                        $rgb = $color->getImagePixelColor($param1, $param2)->getColor();
+                        $this->value = $rgb['r']*256*256 + $rgb['g'] * 256 + $rgb['b'];
+                        if($this->value === false) {
+                            throw new \Exception('Pixel out of bounds');
+                        }
+                    } else {
+                        /*
+                         * missing or invalid $param1 and $param2
+                         */
+                        throw new \Exception('Missing pixel coordinates');
+                    }
                 } else {
                     throw new \Exception('Cannot handle object of type '.get_class($color));
                 }
@@ -691,8 +707,6 @@ class Color
 
         $lightContrast += $threshold/21;
         $darkContrast -= $threshold/21;
-
-        echo '=|'.$darkContrast.' - '.$lightContrast.'|<br/>';
 
         if($darkContrast > $lightContrast) {
             return $darkColor;

@@ -128,13 +128,7 @@ function showColorBlending2($color = null) {
     $average = Color::create($color)->average('#888');
     $negate = Color::create($color)->negate('#888');
     $contrast = Color::create($color)->findConstrast();
-
-
-    $overlayRed = Color::create($color)->overlay(Color::create('red'));
-    $overlayGreen = Color::create($color)->overlay(Color::create('lime'));
-    $overlayBlue = Color::create($color)->overlay(Color::create('blue'));
-    $softlight = Color::create($color)->softlight('#888');
-    $hardlight = Color::create($color)->hardlight('#888');
+    $similarColor = Color::create($color)->findSimilar();
 
 
     echo '<tr>
@@ -146,7 +140,7 @@ function showColorBlending2($color = null) {
           <td style="background-color: '.$negate->hex.';">'.$negate->hex.'</td>
           <td style="background-color: '.'#fff'.';">'.$color->luma.'</td>
           <td style="background-color: '.$color->hex.'; color: '.$contrast->hex.';">'.$contrast->hex.'</td>
-          <td style="background-color: '.$hardlight->hex.';">'.$hardlight->hex.'</td>
+          <td style="background-color: '.$color->hex.'; color: '.$contrast->hex.';">'.$similarColor->name.'</td>
           </tr>';
 }
 
@@ -211,7 +205,7 @@ function showColorBlending2($color = null) {
         <th>Random color</th><th>HSL</th>
         <th>Multiply (#888)</th><th>Screen (#888)</th>
         <th>Overlay red</th><th>Overlay green</th><th>Overlay blue</th>
-        <th>Softlight</th><th>Hardlight</th>
+        <th>Softlight (#888)</th><th>Hardlight (#888)</th>
     </tr>
     <?php
     showColorBlending(Color::create(0xffffff));
@@ -219,14 +213,14 @@ function showColorBlending2($color = null) {
     for($i=0;$i<10;$i++) {
         showColorBlending();
     }
-    showColorBlending2(Color::create(0));
+    showColorBlending(Color::create(0));
     ?>
     <tr><td colspan="8">&nbsp;</td></tr>
     <tr>
         <th>Random color</th><th>HSL</th>
         <th>Difference (#888)</th><th>Exclusion (#888)</th>
         <th>Average (#888)</th><th>Negate(#888)</th><th>Luma</th>
-        <th>Contrast</th><th>Hardlight</th>
+        <th>Contrast</th><th>Name</th>
     </tr>
     <?php
     showColorBlending2(Color::create(0xffffff));

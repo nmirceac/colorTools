@@ -65,6 +65,10 @@ class Palette
         0xffffff, 0xe7d8b1, 0xfdadc7,0x424153, 0xabbcda, 0xf5dd01
     );
 
+    public $luma = null;
+    public $precision = null;
+    public $colors =  null;
+    public $colorsTime =  null;
 
     public function __construct($paletteType = null, $comparisonType = null)
     {
@@ -104,15 +108,20 @@ class Palette
 
     public function getColors(Image $image, $precision=null, $minCoverage = null)
     {
+        $timeStart = microtime(true);
         $precision = (is_null($precision)) ? Palette::ADAPTIVE_PRECISION : $precision;
         $minCoverage = (is_null($minCoverage)) ? Palette::DEFAULT_MIN_COVERAGE : $minCoverage;
 
         $pixels = $image->width * $image->height;
 
         if($precision == Palette::ADAPTIVE_PRECISION) {
-            //getting the pixels of an image that is (for example) 300 x 400
-            $precision = intval(ceil($pixels/120000));
+            $precision = intval(ceil(sqrt($pixels)/80));
         }
+
+        $this->precision = $precision;
+
+        $sampledPixels = floor($image->width/$precision) * floor($image->height/$precision);
+        $luma = 0;
 
 
         $palette = $this->palette;
@@ -120,7 +129,9 @@ class Palette
 
         for($x=0; $x<=($image->width - $precision); $x+=$precision) {
             for($y=0; $y<=($image->height - $precision); $y+=$precision) {
-                $color = Color::create($image->getImageObject(), $x, $y)->findSimilar($this->comparisonType, $palette, true)->hex;
+                $color = Color::create($image->getImageObject(), $x, $y);
+                $luma += $color->getLuma();
+                $color = $color->findSimilar($this->comparisonType, $palette, true)->hex;
                 if(!isset($paletteQ[$color])) {
                     $paletteQ[$color] =pow($precision,2);
                 } else {
@@ -128,6 +139,9 @@ class Palette
                 }
             }
         }
+
+        $luma /= $sampledPixels;
+        $this->luma = $luma;
 
         asort($paletteQ, SORT_NUMERIC);
         $paletteQ = array_reverse($paletteQ);
@@ -140,8 +154,9 @@ class Palette
             }
         }
 
-
-        return $paletteQ;
+        $this->colors = $paletteQ;
+        $this->colorsTime = microtime(true) - $timeStart;
+        return $this;
     }
 }
 
