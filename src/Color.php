@@ -476,7 +476,7 @@ class Color
 
     public function invert()
     {
-        return $this->rgbTransformation(function($value) use ($weight) {
+        return $this->rgbTransformation(function($value) {
             return 1 - $value;
         });
     }

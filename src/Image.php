@@ -54,6 +54,11 @@ class Image
         $this->getImageDetails();
     }
 
+    public static function create($image)
+    {
+        return new Image($image);
+    }
+
     public function getImageType(){
         return $this->imageType;
     }
@@ -106,7 +111,48 @@ class Image
         return $this->imagePath;
     }
 
-    public function getImageSrc($gdOutputType='jpeg', $gdOutputTypeQuality=76) // the number of my apartment
+    public function getImageContent($outputType='jpeg', $outputTypeQuality=76)
+    {
+        if(!is_null($this->imagePath)) {
+            return file_get_contents($this->imagePath);
+        } else {
+            switch ($this->imageType) {
+                case 'string' :
+                    return $this->image;
+                    break;
+
+                case 'gd' : case 'imagick' :
+                    $outputTypeQuality = min($outputTypeQuality, 100);
+
+                    if($outputType=='png' and $outputTypeQuality>9) {
+                        $outputTypeQuality = round($outputTypeQuality/11); //the png quality scale is 0..9
+                    }
+
+                    if($outputTypeQuality<0) {
+                        $outputTypeQuality=0;
+                    }
+
+                    if($this->imageType=='gd') {
+                        ob_start();
+                        call_user_func('image' . $outputType, $this->image, null, $outputTypeQuality);
+                        $image = ob_get_contents();
+                        ob_end_clean();
+                    } else if($this->imageType=='imagick') {
+                        $image = $this->image;
+                        $image->setImageFormat($outputType);
+                        $image->setImageCompressionQuality($outputTypeQuality);
+                        $image = (string) $image;
+                    }
+                    return $image;
+                    break;
+
+                default:
+                    break;
+            }
+        }
+    }
+
+    public function getImageSrc($outputType='jpeg', $outputTypeQuality=76) // the number of my apartment
     {
         if(!is_null($this->imagePath)) {
             return $this->imagePath;
@@ -116,48 +162,25 @@ class Image
                     return 'data:image/'.$this->type.';base64, '.base64_encode($this->image);
                     break;
 
-                case 'gd' :
-                    ob_start();
-                    $gdOutputTypeQuality = min($gdOutputTypeQuality, 100);
-
-                    if($gdOutputType=='png' and $gdOutputTypeQuality>9) {
-                        $gdOutputTypeQuality = round($gdOutputTypeQuality/11); //the png quality scale is 0..9
-                    }
-
-                    if($gdOutputTypeQuality<0) {
-                        $gdOutputTypeQuality=0;
-                    }
-
-                    call_user_func('image' . $gdOutputType, $this->image, null, $gdOutputTypeQuality);
-                    $image = ob_get_contents();
-                    ob_end_clean();
-                    return 'data:image/'.$gdOutputType.';base64, '.base64_encode($image);
-
-                    break;
-
-                case 'imagick' :
-                    $gdOutputTypeQuality = min($gdOutputTypeQuality, 100);
-
-                    if($gdOutputType=='png' and $gdOutputTypeQuality>9) {
-                        $gdOutputTypeQuality = round($gdOutputTypeQuality/11); //the png quality scale is 0..9
-                    }
-
-                    if($gdOutputTypeQuality<0) {
-                        $gdOutputTypeQuality=0;
-                    }
-
-                    $image = $this->image;
-                    $image->setImageFormat($gdOutputType);
-                    $image->setImageCompressionQuality($gdOutputTypeQuality);
-
-                    return 'data:image/'.$gdOutputType.';base64, '.base64_encode((string) $image);
-
+                case 'gd' : case 'imagick' :
+                    return 'data:image/'.$outputType.';base64, '.base64_encode($this->getImageContent($outputType, $outputTypeQuality));
                     break;
 
                 default:
                     break;
             }
         }
+    }
+
+    public function displayImage($outputType='jpeg', $outputTypeQuality=76)
+    {
+        if(!in_array($this->imageType, ['gd', 'imagick'])) {
+            header("Content-Type: image/".$this->type);
+        } else {
+            header("Content-Type: image/".$outputType);
+        }
+        echo $this->getImageContent();
+        exit();
     }
 
     public function getImageObject()

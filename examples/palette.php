@@ -1,12 +1,5 @@
 <?php
-
-error_reporting(E_ALL); ini_set('display_errors', 1);
-
-if(!file_exists('../vendor/autoload.php')) {
-    throw new \Exception('Try running composer update first in '.realpath('..'));
-} else {
-    require_once('../vendor/autoload.php');
-}
+require_once('autoloader.php');
 
 use ColorTools\Palette as Palette;
 use ColorTools\Color as Color;
@@ -64,6 +57,16 @@ function showImageAndPalette($imagePath, $precision=Palette::ADAPTIVE_PRECISION)
     }
 
     echo '</tr>
+    </table>
+    <table cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:600px;text-align:center;margin:0;padding:0;">
+    <tr>
+    <td><img src="'.Palette::getHistogramSrc($palette->histogram['a'], 'gray').'" /></td>
+    <td><img src="'.Palette::getHistogramSrc($palette->histogram['r'], 'red').'" /></td>
+    </tr>
+    <tr>
+    <td><img src="'.Palette::getHistogramSrc($palette->histogram['g'], 'green').'" /></td>
+    <td><img src="'.Palette::getHistogramSrc($palette->histogram['b'], 'blue').'" /></td>
+    </tr>
     </table></div>';
 }
 
@@ -73,15 +76,15 @@ function showImageAndPalette($imagePath, $precision=Palette::ADAPTIVE_PRECISION)
 showPalette();
 
 $testUrl ='http://'.$_SERVER['SERVER_NAME'];
-$testUrl.=substr($_SERVER['REQUEST_URI'],0, strrpos($_SERVER['REQUEST_URI'], '/')+1).'../samples/test5.jpg';
+$testUrl.=substr($_SERVER['REQUEST_URI'],0, strrpos($_SERVER['REQUEST_URI'], '/')+1).'../samples/test4.jpg';
 
 showImageAndPalette('../samples/test.jpg', Palette::ADAPTIVE_PRECISION);
-showImageAndPalette(file_get_contents('../samples/test2.jpg'), Palette::ADAPTIVE_PRECISION);
-showImageAndPalette(imagecreatefromjpeg('../samples/test3.jpg'), Palette::ADAPTIVE_PRECISION);
-showImageAndPalette($testUrl, Palette::ADAPTIVE_PRECISION);
-showImageAndPalette(new Imagick('../samples/test5.jpg'), Palette::ADAPTIVE_PRECISION);
-showImageAndPalette('../samples/test6.jpg', Palette::ADAPTIVE_PRECISION);
-showImageAndPalette('../samples/test7.jpg', Palette::ADAPTIVE_PRECISION);
+//showImageAndPalette(file_get_contents('../samples/test2.jpg'), Palette::ADAPTIVE_PRECISION);
+//showImageAndPalette(imagecreatefromjpeg('../samples/test3.jpg'), Palette::ADAPTIVE_PRECISION);
+//showImageAndPalette($testUrl, Palette::ADAPTIVE_PRECISION);
+//showImageAndPalette(new Imagick('../samples/test5.jpg'), Palette::ADAPTIVE_PRECISION);
+//showImageAndPalette('../samples/test6.jpg', Palette::ADAPTIVE_PRECISION);
+//showImageAndPalette('../samples/test7.jpg', Palette::ADAPTIVE_PRECISION);
 
 ?>
 

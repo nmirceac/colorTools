@@ -66,6 +66,7 @@ class Palette
     );
 
     public $luma = null;
+    public $histogram = null;
     public $precision = null;
     public $colors =  null;
     public $colorsTime =  null;
@@ -120,43 +121,93 @@ class Palette
 
         $this->precision = $precision;
 
-        $sampledPixels = floor($image->width/$precision) * floor($image->height/$precision);
+        $this->sampledPixels = floor($image->width/$precision) * floor($image->height/$precision);
         $luma = 0;
 
-
         $palette = $this->palette;
-        $paletteQ = array();
+        $paletteQuantities = array();
+
+        $histogram['a'] = array_fill(0, 256, 0);
+        $histogram['r'] = array_fill(0, 256, 0);
+        $histogram['g'] = array_fill(0, 256, 0);
+        $histogram['b'] = array_fill(0, 256, 0);
 
         for($x=0; $x<=($image->width - $precision); $x+=$precision) {
             for($y=0; $y<=($image->height - $precision); $y+=$precision) {
                 $color = Color::create($image->getImageObject(), $x, $y);
+
                 $luma += $color->getLuma();
+                $average = round(($color->r + $color->g * 2 + $color->b) / 4);
+                $histogram['a'][$average]++;
+                //$histogram['a'][round(array_sum($color->getRgb()) / 3)]++;
+                $histogram['r'][$color->r]++;
+                $histogram['g'][$color->g]++;
+                $histogram['b'][$color->b]++;
+
                 $color = $color->findSimilar($this->comparisonType, $palette, true)->hex;
-                if(!isset($paletteQ[$color])) {
-                    $paletteQ[$color] =pow($precision,2);
+                if(!isset($paletteQuantities[$color])) {
+                    $paletteQuantities[$color] =pow($precision,2);
                 } else {
-                    $paletteQ[$color]+=pow($precision,2);
+                    $paletteQuantities[$color]+=pow($precision,2);
                 }
             }
         }
 
-        $luma /= $sampledPixels;
+        $luma /= $this->sampledPixels;
         $this->luma = $luma;
 
-        asort($paletteQ, SORT_NUMERIC);
-        $paletteQ = array_reverse($paletteQ);
+        foreach($histogram as $channel=>$h) {
 
-        foreach($paletteQ as $hex=>$value) {
-            $paletteQ[$hex] = round($value / $pixels * 100, 2); //convert the coverage to % out of total number of pixels
+            //smoothing edges
+            $max = max(array_slice($h, 1, -1));
+            $scale = 1 / $max;
 
-            if($minCoverage and $paletteQ[$hex] < $minCoverage) {
-                unset($paletteQ[$hex]);
+            foreach($h as $color=>$value) {
+                $h[$color] = min($scale * $value, 1);
+            }
+
+            $histogram[$channel] = $h;
+        }
+
+        $this->histogram = $histogram;
+
+        asort($paletteQuantities, SORT_NUMERIC);
+        $paletteQuantities = array_reverse($paletteQuantities);
+
+        foreach($paletteQuantities as $hex=>$value) {
+            $paletteQuantities[$hex] = round($value / $pixels * 100, 2);
+            //convert the coverage to % out of total number of pixels
+
+            if($minCoverage and $paletteQuantities[$hex] < $minCoverage) {
+                unset($paletteQuantities[$hex]);
             }
         }
 
-        $this->colors = $paletteQ;
+        $this->colors = $paletteQuantities;
         $this->colorsTime = microtime(true) - $timeStart;
         return $this;
+    }
+
+    public static function getHistogramSrc($histogramArray, $color='black')
+    {
+        return 'data:image/svg+xml;base64, '.base64_encode(self::buildHistogram($histogramArray, $color));
+    }
+
+    public static function buildHistogram($histogramArray, $color='black')
+    {
+        $maxHeight = 100;
+        $barWidth = 1;
+        $max=max($histogramArray);
+        $scale=$maxHeight / $max;
+        $content ='<?xml version="1.0" standalone="no"?>';
+        $content.='<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">';
+        $content.='<svg width="'.($barWidth*256).'" height="'.$maxHeight.'" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">';
+        $content.='<desc>Histogram</desc>';
+        foreach($histogramArray as $r => $val) {
+            $content.='<rect style="fill:'.$color.';fill-opacity:0.8;" x="'.($r * $barWidth).'" y="'.($maxHeight-$scale * $val).'" width="'.($barWidth).'" height="'.($scale * $val).'"/>';
+        }
+        $content.='</svg>';
+        return $content;
     }
 }
 

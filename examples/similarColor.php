@@ -1,10 +1,5 @@
-<?php require_once('../vendor/autoload.php');
-
-if(!file_exists('../vendor/autoload.php')) {
-    throw new \Exception('Try running composer update first in '.realpath('..'));
-} else {
-    require_once('../vendor/autoload.php');
-}
+<?php
+require_once('autoloader.php');
 
 use ColorTools\Color as Color;
 
