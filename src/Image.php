@@ -59,6 +59,29 @@ class Image
         return new Image($image);
     }
 
+    public static function createFromColors($colorsArray=array(), $width=0, $height=0)
+    {
+        if (empty($colorsArray)) {
+            throw new \Exception('Couldn\'t find any colors.');
+        }
+
+        if (empty($width)) {
+            throw new \Exception('I need the width of the image');
+        }
+        if (empty($height)) {
+            throw new \Exception('I also need the height of the image');
+        }
+
+        $image = imagecreatetruecolor($width, $height);
+        for($x=0; $x<$width; $x++) {
+            for($y=0; $y<$height; $y++) {
+                imagesetpixel($image, $x, $y, $colorsArray[$x + $y * $width]->int);
+            }
+        }
+
+        return new Image($image);
+    }
+
     public function getImageType(){
         return $this->imageType;
     }
@@ -211,15 +234,9 @@ class Image
         return $this->imageObject;
     }
 
-    public function getColors($palette = null, $comparisonType = null, $precision = null, $minCoverage = null)
+    public function getAnalysis($analysisOptions=array())
     {
-        $palette = (is_null($palette)) ? Palette::PALETTE_BRIAN_MCDO : $palette;
-        $precision = (is_null($precision)) ? Palette::ADAPTIVE_PRECISION : $precision;
-        $comparisonType = (is_null($comparisonType)) ? Color::COMPARE_GREAT : $comparisonType;
-        $minCoverage = (is_null($minCoverage)) ? Palette::DEFAULT_MIN_COVERAGE : $minCoverage;
-
-        $palette = new Palette($palette, $comparisonType);
-        return $palette->getColors($this, $precision, $minCoverage);
+        return Analyze::getAnalysis($this, $analysisOptions);
     }
 }
 

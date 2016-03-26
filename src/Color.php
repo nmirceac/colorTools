@@ -726,8 +726,8 @@ class Color
         if($avoidBlacks)
         {
             $originalValue = $this->value;
-            if(max($this->getRgb()) <= 50 and min($this->getRgb())<=12) {
-                $this->lighten(25);
+            if($this->getLuma()>0.04 and $this->getLuma()<0.16) {
+                $this->lighten(ceil(5+$this->getLuma()*100));
             }
         }
 
@@ -743,7 +743,6 @@ class Color
                 $colorName = $name;
                 $similarColor = $color;
             }
-            //echo "Comparing ".$this->hex." to $name - ".$color->hex." - DIFF $diff / $minDiff MIN\n";
         }
 
         if($avoidBlacks) {
