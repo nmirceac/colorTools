@@ -5,6 +5,7 @@ class Color
     private $colors = array();
     private $value = null;
     private $name = null;
+    private $similarColor = null;
 
     const COMPARE_FAST   = 1;
     const COMPARE_NORMAL = 2;
@@ -70,6 +71,18 @@ class Color
                      * we want to analyze
                      */
                     if((is_int($param1) and $param1>=0) and (is_int($param2) and $param2>=0)) {
+                        /*
+                         * for images without an alpha channels, it's better to just use the int value returned by
+                         * imagecoloarat(), instead of using imagecolorsforindex() functions for getting rgb values
+                         * as it is considerably faster (much faster)
+                         *
+                         * the slow way is
+                         * $this->setRgb(imagecolorsforindex($color, imagecolorat($color, $param1, $param2)));
+                         * imagecolorat(...) will return something like
+                         * [["red"]=> int(119), ["green"]=> int(123), ["blue"]=> int(180), ["alpha"]=> int(127)]
+                         * but my support for alpha is non existent at the moment
+                         *
+                         */
                         $this->value = imagecolorat($color, $param1, $param2);
                         if($this->value === false) {
                             throw new \Exception('Pixel out of bounds');
@@ -119,6 +132,30 @@ class Color
                     } else {
                         throw new \Exception('Not sure what this hex string is "'.$color.'", please let me know');
                     }
+                } elseif(strpos($color, 'hsl')!==false and strpos($color, ',')!==false) {
+                    $originalString = $color;
+                    $color = trim(str_replace(array('hsl', '(', ')'), '', $color), "\r\n\t ");
+                    if(strpos($color, ',')!==false) {
+                        $color = str_replace(' ', '', $color);
+                        $color = explode(',', $color);
+                        if(count($color)==3) {
+                            $this->setHsl($color[0], $color[1], $color[2]);
+                        } else {
+                            throw new \Exception('Can\'t really understand this HSL string: '.$originalString);
+                        }
+                    }
+                } elseif(strpos($color, 'cmyk')!==false and strpos($color, ',')!==false) {
+                    $originalString = $color;
+                    $color = trim(str_replace(array('cmyk', '(', ')'), '', $color), "\r\n\t ");
+                    if(strpos($color, ',')!==false) {
+                        $color = str_replace(' ', '', $color);
+                        $color = explode(',', $color);
+                        if(count($color)==4) {
+                            $this->setCmyk($color[0], $color[1], $color[2], $color[3]);
+                        } else {
+                            throw new \Exception('Can\'t really understand this CMYK string: '.$originalString);
+                        }
+                    }
                 } elseif(strpos($color, 'rgb')!==false or strpos($color, ',')!==false) {
                     // i hope this is some sort of rgb(r,g,b) kinda string, or maybe even rgba(r,g,b,a) - ignoring a
                     $color = trim(str_replace(array('rgb', 'rgba', '(', ')'), '', $color), "\r\n\t ");
@@ -163,10 +200,14 @@ class Color
                      * we want to analyze
                      */
                     if((is_int($param1) and $param1>=0) and (is_int($param2) and $param2>=0)) {
-                        $rgb = $color->getImagePixelColor($param1, $param2)->getColor();
-                        $this->value = $rgb['r']*256*256 + $rgb['g'] * 256 + $rgb['b'];
-                        if($this->value === false) {
-                            throw new \Exception('Pixel out of bounds');
+                        /*
+                         * No way go get an int out of a ImagickPixel object.
+                         * If you know an efficient and elegant way (without using getColour()), please let me know.
+                         */
+                        try {
+                            $this->setRgb($color->getImagePixelColor($param1, $param2)->getColor());
+                        } catch (\ImagickException $e) {
+                            throw new \Exception('Problem getting the Imagick pixel: '.$e->getMessage());
                         }
                     } else {
                         /*
@@ -174,6 +215,8 @@ class Color
                          */
                         throw new \Exception('Missing pixel coordinates');
                     }
+                } else if(get_class($color) == 'ImagickPixel') {
+                    $this->setRgb($color->getColor());
                 } else {
                     throw new \Exception('Cannot handle object of type '.get_class($color));
                 }
@@ -195,6 +238,10 @@ class Color
 
         if($param == 'hex') {
             return $this->getHex();
+        }
+
+        if($param == 'safe' or $param == 'safeHex') {
+            return $this->getSafeHex();
         }
 
         if($param == 'rgb') {
@@ -230,14 +277,27 @@ class Color
             return 'hsl('.implode(', ', $hsl).')';
         }
 
+        if($param == 'cmyk') {
+            $cmyk = $this->getCmyk();
+            foreach($cmyk as $channel=>$value) {
+                $cmyk[$channel] = round($value*100, 2).'%';
+            }
+            return 'cmyk('.implode(', ', $cmyk).')';
+        }
+
         if($param == 'int') {
             return $this->value;
         }
 
         if($param == 'name') {
+            if(is_null($this->name)) {
+                if(is_null($this->similarColor)) {
+                    $this->similarColor = $this->findSimilar();
+                }
+                $this->name = $this->similarColor->name;
+            }
             return $this->name;
         }
-
 
         $tr = debug_backtrace();
         trigger_error('Undefined property '.$param.' in '.$tr[0]['file'].' on line '.$tr[0]['line'], E_USER_NOTICE);
@@ -277,6 +337,11 @@ class Color
     public function getHex()
     {
         return '#'.str_pad(dechex($this->value), 6, '0', STR_PAD_LEFT);
+    }
+
+    public function getSafeHex()
+    {
+        return '#'.dechex(round($this->red/16)).dechex(round($this->green/16)).dechex(round($this->blue/16));
     }
 
     public function getRed()
@@ -334,16 +399,26 @@ class Color
 
     public function setRgb($red = null, $green = null, $blue = null)
     {
-        if(!is_null($red)) {
-            $this->setRed($red);
-        }
+        if(is_array($red) and isset($red['r']) and isset($red['g']) and isset($red['b'])) {
+            $this->setRed($red['r']);
+            $this->setGreen($red['g']);
+            $this->setBlue($red['b']);
+        } else if(is_array($red) and isset($red['red']) and isset($red['green']) and isset($red['blue'])) {
+            $this->setRed($red['red']);
+            $this->setGreen($red['green']);
+            $this->setBlue($red['blue']);
+        } else {
+            if(!is_null($red)) {
+                $this->setRed($red);
+            }
 
-        if(!is_null($green)) {
-            $this->setGreen($green);
-        }
+            if(!is_null($green)) {
+                $this->setGreen($green);
+            }
 
-        if(!is_null($blue)) {
-            $this->setBlue($blue);
+            if(!is_null($blue)) {
+                $this->setBlue($blue);
+            }
         }
 
         return $this;
@@ -398,10 +473,24 @@ class Color
     public function setHsl($hue=null, $saturation=null, $lightness=null)
     {
         if(is_array($hue)) {
-            if(isset($hue['hue']) and isset($hue['saturation']) and isset($hue['lightness'])) {
-                $hsl=$hue;
-                $hsl['saturation'] = $hue['saturation'];
-                $hsl['lightness'] = $hue['lightness'];
+            /*
+             * imagemagick uses for some reason the term "luminosity" instead of "ligthness"
+             * check yourself:
+             * http://php.net/manual/en/imagickpixel.gethsl.php
+             * ..."Returns the HSL value in an array with the keys 'hue', 'saturation', and 'luminosity'"...
+             * but, according to most people (https://en.wikipedia.org/wiki/HSL_and_HSV),
+             * "HSL stands for hue, saturation, and lightness, and is also often called HLS".
+             * I'm going to accept both lightness and luminosity. Tolerance is the key to a better world!
+             */
+
+            if(isset($hue['hue']) and isset($hue['saturation']) and (isset($hue['lightness']) or isset($hue['luminosity']))) {
+                $hsl = $hue;
+                if(isset($hue['lightness'])) {
+                    $hsl['lightness'] = $hue['lightness'];
+                } else if(isset($hue['lightness'])) {
+                    $hsl['lightness'] = $hue['luminosity'];
+                }
+
             } else if (isset($hue['h']) and isset($hue['s']) and isset($hue['l'])) {
                 $hsl['hue'] = $hue['h'];
                 $hsl['saturation'] = $hue['s'];
@@ -414,14 +503,14 @@ class Color
             $hsl['saturation'] = $saturation;
             $hsl['lightness'] = $lightness;
         } else {
-            throw new \Exception('Can\'t get this hsl');
+            throw new \Exception('Can\'t get this HSL');
         }
 
-        if(strpos($hsl['saturation'],'%')) {
+        if(strpos($hsl['saturation'],'%') or $hsl['saturation'] > 1) {
             $hsl['saturation'] = trim($hsl['saturation'],"\r\n\t %") / 100;
         }
 
-        if(strpos($hsl['lightness'],'%')) {
+        if(strpos($hsl['lightness'],'%') or $hsl['lightness'] > 1) {
             $hsl['lightness'] = trim($hsl['lightness'],"\r\n\t %") / 100;
         }
 
@@ -463,6 +552,66 @@ class Color
         $this->setGreen($g);
         $this->setBlue($b);
 
+        return $this;
+    }
+
+    public function getCmyk()
+    {
+        $rgb = $this->getRgb();
+
+        $r = $rgb['red']/255;
+        $g = $rgb['green']/255;
+        $b = $rgb['blue']/255;
+        $max = max($r, $g, $b);
+
+        $k = 1 - $max;
+        if($max==0) {
+            $c = $m = $y = 0;
+        } else {
+            $c = ($max - $r) / $max;
+            $m = ($max - $g) / $max;
+            $y = ($max - $b) / $max;
+        }
+
+
+        return ['cyan'=>$c, 'magenta'=>$m, 'yellow'=>$y, 'black'=>$k];
+    }
+
+    public function setCmyk($cyan=null, $magenta=null, $yellow=null, $black=null)
+    {
+        if(is_array($cyan)) {
+            if(isset($cyan['cyan']) and isset($cyan['magenta']) and isset($cyan['yellow'])) {
+                $cmyk=$cyan;
+            } else if (isset($cyan['c']) and isset($cyan['m']) and isset($cyan['y']) and isset($cyan['k'])) {
+                $cmyk['cyan'] = $cyan['c'];
+                $cmyk['magenta'] = $cyan['m'];
+                $cmyk['yellow'] = $cyan['y'];
+                $cmyk['black'] = $cyan['black'];
+            } else {
+                throw new \Exception('Don\'t understand this CMYK array: '.print_r($cyan, true));
+            }
+        } else if (!is_null($cyan) and !is_null($magenta) and !is_null($yellow) and !is_null($black)) {
+            $cmyk['cyan'] = $cyan;
+            $cmyk['magenta'] = $magenta;
+            $cmyk['yellow'] = $yellow;
+            $cmyk['black'] = $black;
+        } else {
+            throw new \Exception('Can\'t get this CMYK');
+        }
+
+        foreach($cmyk as $channel=>$value) {
+            if(strpos($value, '%')!==false or $value>1) {
+                $cmyk[$channel] = trim($value,"\r\n\t %")/100;
+            } else {
+                $cmyk[$channel] = trim($value,"\r\n\t ");
+            }
+        }
+
+        $r = round(255 * (1 - $cmyk['cyan']) * (1 - $cmyk['black']));
+        $g = round(255 * (1 - $cmyk['magenta']) * (1 - $cmyk['black']));
+        $b = round(255 * (1 - $cmyk['yellow']) * (1 - $cmyk['black']));
+
+        $this->setRgb($r, $g, $b);
         return $this;
     }
 
@@ -715,7 +864,7 @@ class Color
         }
     }
 
-    public function findSimilar($comparisonType = null, $collection = null, $avoidBlacks=false) //in a non-racist way
+    public function findSimilar($comparisonType = null, $collection = null, $avoidBlacks=false)
     {
         $comparisonType = (is_null($comparisonType)) ? Color::COMPARE_GREAT : $comparisonType;
 
@@ -725,7 +874,6 @@ class Color
 
         if($avoidBlacks)
         {
-            $originalValue = $this->value;
             if($this->getLuma()>0.04 and $this->getLuma()<0.16) {
                 $this->lighten(ceil(5+$this->getLuma()*100));
             }
@@ -745,10 +893,7 @@ class Color
             }
         }
 
-        if($avoidBlacks) {
-            $this->value = $originalValue;
-        }
-
+        $similarColor = Color::create($similarColor);
         $similarColor -> name = $colorName;
         return $similarColor;
     }

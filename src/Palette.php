@@ -104,12 +104,63 @@ class Palette
         if ($param == 'collection') {
             return $this->getCollection();
         }
+
+        if (in_array($param, ['luma', 'byluma'])) {
+            return $this->getByLuma();
+        }
+
+        if (in_array($param, ['hue', 'byhue'])) {
+            return $this->getByHue();
+        }
+
+        if (in_array($param, ['saturation', 'bysaturation'])) {
+            return $this->getBySaturation();
+        }
     }
 
     public function getCollection()
     {
         return $this->palette;
     }
+
+    public function getByLuma()
+    {
+        $palette = $this->palette;
+        $luma = [];
+        foreach($palette as $color) {
+            $color = Color::create($color);
+            $luma[] = $color->getLuma();
+        }
+
+        array_multisort($luma, SORT_DESC, $palette);
+        return $palette;
+    }
+    public function getByHue()
+    {
+        $palette = $this->palette;
+        $hue = [];
+        foreach($palette as $color) {
+            $color = Color::create($color);
+            $hue[] = $color->getHsl()['hue'];
+        }
+
+        array_multisort($hue, SORT_DESC, $palette);
+        return $palette;
+    }
+
+    public function getBySaturation()
+    {
+        $palette = $this->palette;
+        $saturation = [];
+        foreach($palette as $color) {
+            $color = Color::create($color);
+            $saturation[] = $color->getHsl()['saturation'];
+        }
+
+        array_multisort($saturation, SORT_DESC, $palette);
+        return $palette;
+    }
+
 
 }
 

@@ -123,7 +123,6 @@ function showColorBlending2($color = null) {
     $average = Color::create($color)->average('#888');
     $negate = Color::create($color)->negate('#888');
     $contrast = Color::create($color)->findConstrast();
-    $similarColor = Color::create($color)->findSimilar();
 
 
     echo '<tr>
@@ -135,7 +134,7 @@ function showColorBlending2($color = null) {
           <td style="background-color: '.$negate->hex.';">'.$negate->hex.'</td>
           <td style="background-color: '.'#fff'.';">'.$color->luma.'</td>
           <td style="background-color: '.$color->hex.'; color: '.$contrast->hex.';">'.$contrast->hex.'</td>
-          <td style="background-color: '.$color->hex.'; color: '.$contrast->hex.';">'.$similarColor->name.'</td>
+          <td style="background-color: '.$color->hex.'; color: '.$contrast->hex.';">'.$color->cmyk.'</td>
           </tr>';
 }
 
@@ -215,7 +214,7 @@ function showColorBlending2($color = null) {
         <th>Random color</th><th>HSL</th>
         <th>Difference (#888)</th><th>Exclusion (#888)</th>
         <th>Average (#888)</th><th>Negate(#888)</th><th>Luma</th>
-        <th>Contrast</th><th>Name</th>
+        <th>Contrast</th><th>CYMK</th>
     </tr>
     <?php
     showColorBlending2(Color::create(0xffffff));

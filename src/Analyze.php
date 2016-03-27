@@ -37,6 +37,10 @@ class Analyze
             $analysisOptions['minCoverage'] = Analyze::DEFAULT_MIN_COVERAGE;
         }
 
+        if(!isset($analysisOptions['useColorsMatchTable'])) {
+            $analysisOptions['useColorsMatchTable'] = true;
+        }
+
         $this->analysisOptions = $analysisOptions;
 
         $this->palette = new Palette($analysisOptions['palette']);
@@ -115,13 +119,29 @@ class Analyze
 
     public function getColors()
     {
+        //return [];
         if(is_null($this->colors)) {
             $timeStart = microtime(true);
 
             $paletteQuantities = [];
+            $matchedColors = [];
 
             foreach ($this->sampledPixels as $color) {
-                $color = $color->findSimilar($this->analysisOptions['comparisonType'], $this->palette->collection, true);
+                if($this->analysisOptions['useColorsMatchTable']) {
+                    /*
+                     * Building and using a lookup table by reducing the maximum numbers of colors from over
+                     * 16 million to about 4096. Will make things much faster but a little bit less precise.
+                     * If you have the time, and enough CPU, don't use it.
+                     */
+                    $safe = $color->safe;
+                    if(!isset($matchedColors[$safe])) {
+                        $matchedColors[$safe] = $color->findSimilar($this->analysisOptions['comparisonType'], $this->palette->collection, true);
+                    }
+                    $color = $matchedColors[$safe];
+                } else {
+                    $color = $color->findSimilar($this->analysisOptions['comparisonType'], $this->palette->collection, true);
+                }
+
                 $this->similarColorPixels[] = $color;
                 $color = $color->hex;
                 if (!isset($paletteQuantities[$color])) {

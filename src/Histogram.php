@@ -68,6 +68,24 @@ class Histogram
             $histogram['l'][round($color->getLuma()*255)]++;
         }
 
+        /*
+         * Normalizing values - giving it smoother curves (which you would get naturally by sampling more pixels)
+         */
+        foreach ($histogram as $type => $h) {
+            $maxValueMultiplier = 4;
+            $average = array_sum($h) / 256;
+
+            foreach ($h as $channel => $value) {
+
+                $h[$channel] = min($value, $average*$maxValueMultiplier);
+                if($channel>0 and $channel<255) {
+                    $h[$channel] = ($h[$channel-1] + $h[$channel]*2 +  min($h[$channel+1], $average*$maxValueMultiplier))/4;
+                }
+            }
+
+            $histogram[$type] = $h;
+        }
+
         foreach ($histogram as $type => $h) {
             //smoothing edges
             $max = max(array_slice($h, 1, -1));

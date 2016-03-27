@@ -11,17 +11,38 @@ function showPalette($palette = Palette::PALETTE_COLOR_TOOLS)
 {
     $palette = new Palette(Palette::PALETTE_COLOR_TOOLS);
 
-    echo '<table><tr>';
+    echo '<table>';
+    echo '<tr>';
     foreach($palette->collection as $color) {
         $color = Color::create($color)->hex;
         echo '<td title="$color" style="width:24px;height:10px;background-color:'.$color.';"></td>';
     }
-    echo '</tr></table>';
+    echo '</tr>';
+    echo '<tr>';
+    foreach($palette->byLuma as $color) {
+        $color = Color::create($color)->hex;
+        echo '<td title="$color" style="width:24px;height:10px;background-color:'.$color.';"></td>';
+    }
+    echo '</tr>';
+    echo '<tr>';
+    foreach($palette->byHue as $color) {
+        $color = Color::create($color)->hex;
+        echo '<td title="$color" style="width:24px;height:10px;background-color:'.$color.';"></td>';
+    }
+    echo '</tr>';
+    echo '<tr>';
+    foreach($palette->bySaturation as $color) {
+        $color = Color::create($color)->hex;
+        echo '<td title="$color" style="width:24px;height:10px;background-color:'.$color.';"></td>';
+    }
+    echo '</tr>';
+    echo '</table>';
 }
 
 function showImageAndPalette($imagePath, $precision=Analyze::ADAPTIVE_PRECISION)
 {
     $image = new Image($imagePath);
+    //$precision = 8;
     $analysis = $image->getAnalysis(['palette'=>Palette::PALETTE_COLOR_TOOLS, 'comparisonType'=>Color::COMPARE_GREAT, 'precision'=>$precision, 'minCoverage'=>3]);
 
 
@@ -44,7 +65,7 @@ function showImageAndPalette($imagePath, $precision=Analyze::ADAPTIVE_PRECISION)
     $analysis->luma;
     $analysis->histogram;
     $sampledPixelsImage = $analysis->getSampledPixelsImage();
-    $similarColorImage = $analysis->getSimilarColorImage();
+    #$similarColorImage = $analysis->getSimilarColorImage();
 
     echo '<div style="border:1px solid black;box-shadow:0 0 10px rgba(0,0,0, .5);margin:15px;float:left;">
     <p style="margin:3px;text-indent:7px;font-size:12px;">'.$imagePath.' with '.$precision.' - got '.
