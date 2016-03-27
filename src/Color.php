@@ -144,6 +144,18 @@ class Color
                             throw new \Exception('Can\'t really understand this HSL string: '.$originalString);
                         }
                     }
+                } elseif(strpos($color, 'hsv')!==false and strpos($color, ',')!==false) {
+                    $originalString = $color;
+                    $color = trim(str_replace(array('hsv', '(', ')'), '', $color), "\r\n\t ");
+                    if(strpos($color, ',')!==false) {
+                        $color = str_replace(' ', '', $color);
+                        $color = explode(',', $color);
+                        if(count($color)==3) {
+                            $this->setHsv($color[0], $color[1], $color[2]);
+                        } else {
+                            throw new \Exception('Can\'t really understand this HSV string: '.$originalString);
+                        }
+                    }
                 } elseif(strpos($color, 'cmyk')!==false and strpos($color, ',')!==false) {
                     $originalString = $color;
                     $color = trim(str_replace(array('cmyk', '(', ')'), '', $color), "\r\n\t ");
@@ -271,10 +283,16 @@ class Color
 
         if($param == 'hsl') {
             $hsl = $this->getHsl();
-            $hsl['hue']=$hsl['hue'];
-            $hsl['saturation']=round($hsl['saturation']*100).'%';
-            $hsl['lightness']=round($hsl['lightness']*100).'%';
+            $hsl['saturation']=round($hsl['saturation']*100, 2).'%';
+            $hsl['lightness']=round($hsl['lightness']*100, 2).'%';
             return 'hsl('.implode(', ', $hsl).')';
+        }
+
+        if($param == 'hsv') {
+            $hsv = $this->getHsv();
+            $hsv['saturation']=round($hsv['saturation']*100, 2).'%';
+            $hsv['value']=round($hsv['value']*100, 2).'%';
+            return 'hsv('.implode(', ', $hsv).')';
         }
 
         if($param == 'cmyk') {
@@ -535,6 +553,110 @@ class Color
             $g = $x;
             $b = $c;
         } else if($hsl['hue'] < 300) {
+            $r = $x;
+            $g = 0;
+            $b = $c;
+        } else {
+            $r = $c;
+            $g = 0;
+            $b = $x;
+        }
+
+        $r = round(($r+$m) * 255);
+        $g = round(($g+$m) * 255);
+        $b = round(($b+$m) * 255);
+
+        $this->setRed($r);
+        $this->setGreen($g);
+        $this->setBlue($b);
+
+        return $this;
+    }
+
+    public function getHsv()
+    {
+        $r = $this->r / 255;
+        $g = $this->g / 255;
+        $b = $this->b / 255;
+
+
+        $cMax = max($r, $g, $b);
+        $cMin = min($r, $g, $b);
+        $cDif = $cMax - $cMin;
+
+        if($cDif==0) {
+            $hue = 0;
+        } else if ($cMax == $r) {
+            $hue = deg2rad(60) * fmod(($g - $b)/$cDif, 6);
+            if($hue<0) {
+                $hue+=2*M_PI;
+            }
+        } else if ($cMax == $g) {
+            $hue = deg2rad(60) * ((($b - $r)/$cDif) + 2);
+        } else if ($cMax == $b) {
+            $hue = deg2rad(60) * ((($r - $g)/$cDif) + 4);
+        }
+
+        if($cMax==0) {
+            $saturation=0;
+        } else {
+            $saturation = $cDif / $cMax;
+        }
+
+        $value = $cMax;
+
+        return ['hue'=> round(rad2deg($hue)), 'saturation'=>$saturation, 'value'=>$value];
+    }
+
+    public function setHsv($hue=null, $saturation=null, $value=null)
+    {
+        if(is_array($hue)) {
+            if(isset($hue['hue']) and isset($hue['saturation']) and isset($hue['value'])) {
+                $hsv = $hue;
+            } else if (isset($hue['h']) and isset($hue['s']) and isset($hue['v'])) {
+                $hsv['hue'] = $hue['h'];
+                $hsv['saturation'] = $hue['s'];
+                $hsv['value'] = $hue['v'];
+            } else {
+                throw new \Exception('Don\'t understand this HSV array: '.print_r($hsv, true));
+            }
+        } else if (!is_null($hue) and !is_null($saturation) and !is_null($value)) {
+            $hsv['hue'] = $hue;
+            $hsv['saturation'] = $saturation;
+            $hsv['value'] = $value;
+        } else {
+            throw new \Exception('Can\'t get this HSV');
+        }
+
+        if(strpos($hsv['saturation'],'%') or $hsv['saturation'] > 1) {
+            $hsv['saturation'] = trim($hsv['saturation'],"\r\n\t %") / 100;
+        }
+
+        if(strpos($hsv['value'],'%') or $hsv['value'] > 1) {
+            $hsv['value'] = trim($hsv['value'],"\r\n\t %") / 100;
+        }
+
+        $c = $hsv['value'] * $hsv['saturation'];
+        $x = $c * (1 - abs(fmod($hsv['hue'] / 60, 2) - 1));
+        $m = $hsv['value'] - $c;
+
+        if($hsv['hue'] < 60) {
+            $r = $c;
+            $g = $x;
+            $b = 0;
+        } else if($hsv['hue'] < 120) {
+            $r = $x;
+            $g = $c;
+            $b = 0;
+        } else if($hsv['hue'] < 180) {
+            $r = 0;
+            $g = $c;
+            $b = $x;
+        } else if($hsv['hue'] < 240) {
+            $r = 0;
+            $g = $x;
+            $b = $c;
+        } else if($hsv['hue'] < 300) {
             $r = $x;
             $g = 0;
             $b = $c;

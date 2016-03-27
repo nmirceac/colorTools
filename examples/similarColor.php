@@ -127,14 +127,14 @@ function showColorBlending2($color = null) {
 
     echo '<tr>
           <td style="background-color: '.$color->hex.';">'.$color->hex.'</td>
-          <td style="background-color: '.$color->hsl.';">'.$color->hsl.'</td>
+          <td style="background-color: '.$color->hsl.'; color: '.$contrast->hex.';">'.$color->hsv.'</td>
+          <td style="background-color: '.$color->hex.'; color: '.$contrast->hex.';">'.$color->cmyk.'</td>
           <td style="background-color: '.$difference->hex.';">'.$difference->hex.'</td>
           <td style="background-color: '.$exclusion->hex.';">'.$exclusion->hex.'</td>
           <td style="background-color: '.$average->hex.';">'.$average->hex.'</td>
           <td style="background-color: '.$negate->hex.';">'.$negate->hex.'</td>
           <td style="background-color: '.'#fff'.';">'.$color->luma.'</td>
           <td style="background-color: '.$color->hex.'; color: '.$contrast->hex.';">'.$contrast->hex.'</td>
-          <td style="background-color: '.$color->hex.'; color: '.$contrast->hex.';">'.$color->cmyk.'</td>
           </tr>';
 }
 
@@ -211,10 +211,10 @@ function showColorBlending2($color = null) {
     ?>
     <tr><td colspan="8">&nbsp;</td></tr>
     <tr>
-        <th>Random color</th><th>HSL</th>
+        <th>Random color</th><th>HSV</th><th>CMYK</th>
         <th>Difference (#888)</th><th>Exclusion (#888)</th>
-        <th>Average (#888)</th><th>Negate(#888)</th><th>Luma</th>
-        <th>Contrast</th><th>CYMK</th>
+        <th>Average (#888)</th><th>Negate(#888)</th>
+        <th>Luma</th><th>Contrast</th>
     </tr>
     <?php
     showColorBlending2(Color::create(0xffffff));

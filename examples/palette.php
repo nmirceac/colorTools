@@ -5,7 +5,6 @@ use ColorTools\Palette as Palette;
 use ColorTools\Color as Color;
 use ColorTools\Image as Image;
 use ColorTools\Analyze as Analyze;
-use ColorTools\Histogram as Histogram;
 
 function showPalette($palette = Palette::PALETTE_COLOR_TOOLS)
 {
@@ -65,13 +64,13 @@ function showImageAndPalette($imagePath, $precision=Analyze::ADAPTIVE_PRECISION)
     $analysis->luma;
     $analysis->histogram;
     $sampledPixelsImage = $analysis->getSampledPixelsImage();
-    #$similarColorImage = $analysis->getSimilarColorImage();
+    $similarColorImage = $analysis->getSimilarColorImage();
 
     echo '<div style="border:1px solid black;box-shadow:0 0 10px rgba(0,0,0, .5);margin:15px;float:left;">
     <p style="margin:3px;text-indent:7px;font-size:12px;">'.$imagePath.' with '.$precision.' - got '.
         count($analysis->colors).' colors in '.round(array_sum($analysis->time), 3).'s - brightness - '.
         round($analysis->luma*100).'%</p>
-    <img src="'.$image->getImageSrc().'" width="600" /><br/>
+    <img src="'.$similarColorImage->getImageSrc().'" width="600" /><br/>
     <table style="border-collapse:collapse;width:600px;height:25px;font-size:12px;line-height:12px;margin:0;padding:0;">
         <tr>';
     foreach($analysis->colors as $hex=>$coverage) {
