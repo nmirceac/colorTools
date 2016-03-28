@@ -91,6 +91,13 @@ function showColorBlending($color = null) {
         $color=Color::create(rand(0, 0xffffff));
     }
 
+    $similar = Color::create($color)->findSimilar(null, $color->getAllColors());
+    if(isset($similar->details['url'])) {
+        $similarName = '<a style="color:inherit;" href="'.$similar->url.'" target="_blank">'.$similar->name.'</a>';
+    } else {
+        $similarName = $similar->name;
+    }
+
     $multiply = Color::create($color)->multiply('#888');
     $screen = Color::create($color)->screen('#888');
     $overlayRed = Color::create($color)->overlay(Color::create('red'));
@@ -102,7 +109,7 @@ function showColorBlending($color = null) {
 
     echo '<tr>
           <td style="background-color: '.$color->hex.';">'.$color->hex.'</td>
-          <td style="background-color: '.$color->hsl.';">'.$color->hsl.'</td>
+          <td style="background-color: '.$similar->hex.';">'.$similarName.' ('.$similar->similarity.' '.$similar->hex.')</td>
           <td style="background-color: '.$multiply->hex.';">'.$multiply->hex.'</td>
           <td style="background-color: '.$screen->hex.';">'.$screen->hex.'</td>
           <td style="background-color: '.$overlayRed->hex.';">'.$overlayRed->hex.'</td>
@@ -196,7 +203,7 @@ function showColorBlending2($color = null) {
     ?>
     <tr><td colspan="8">&nbsp;</td></tr>
     <tr>
-        <th>Random color</th><th>HSL</th>
+        <th>Random color</th><th>Wiki Color Name</th>
         <th>Multiply (#888)</th><th>Screen (#888)</th>
         <th>Overlay red</th><th>Overlay green</th><th>Overlay blue</th>
         <th>Softlight (#888)</th><th>Hardlight (#888)</th>
