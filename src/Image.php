@@ -20,7 +20,7 @@ class Image
                 $this->imageType = 'string';
             } else {
                 if (!file_exists($image)) {
-                    throw new \Exception('Invalid filename');
+                    throw new Exception('Invalid filename');
                 }
 
                 if (filesize($image) <= 11) {

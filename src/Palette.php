@@ -96,7 +96,7 @@ class Palette
 
 
         if(is_null($this->palette)) {
-            throw new \Exception('Invalid palette selected');
+            throw new Exception('Invalid palette selected');
         }
     }
 
@@ -163,6 +163,4 @@ class Palette
         array_multisort($saturation, SORT_DESC, $palette);
         return $palette;
     }
-
-
 }

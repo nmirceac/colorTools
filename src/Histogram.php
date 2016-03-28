@@ -132,7 +132,7 @@ class Histogram
         }
 
         if(!isset($this->histogramData[$histogram])) {
-            throw new \Exception('Cannot find details about this historgram type');
+            throw new Exception('Cannot find details about this historgram type');
         }
 
         switch($histogram) {

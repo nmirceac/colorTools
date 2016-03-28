@@ -1,5 +1,5 @@
 <?php
-require_once('autoloader.php');
+require_once('autoload.php');
 
 use ColorTools\Palette as Palette;
 use ColorTools\Color as Color;
