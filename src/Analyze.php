@@ -88,7 +88,7 @@ class Analyze
         $precision = $this->analysisOptions['precision'];
 
         if ($precision == Analyze::ADAPTIVE_PRECISION) {
-            $precision = intval(ceil(sqrt($pixels) / 60));
+            $precision = intval(ceil(sqrt($pixels) / 300));
         }
         $this->precision = $precision;
 

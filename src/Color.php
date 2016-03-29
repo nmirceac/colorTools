@@ -295,6 +295,34 @@ class Color
             return $this->details[$param];
         }
 
+        if($param == 'fullname') {
+            if(!isset($this->details['color'])) {
+                $this->details['color'] = $this->findSimilar(null, $this->allColors);
+            }
+            $this->details['fullname'] = $this->details['color']->name;
+            return $this->details['fullname'];
+        }
+
+        if($param == 'url') {
+            if(!isset($this->details['color'])) {
+                $this->details['color'] = $this->findSimilar(null, $this->allColors);
+            }
+
+            if(isset($this->details['color']->details['url'])) {
+                $this->details['url'] = $this->details['color']->details['url'];
+                return $this->details['url'];
+            } else {
+                return null;
+            }
+        }
+
+        /*
+         * custom property that wasn't found in $this->details
+         */
+        if(substr($param, 0, 1)=='_') {
+            return null;
+        }
+
         throw new Exception('Cannot find property "'.$param.'"".');
     }
 
@@ -311,6 +339,8 @@ class Color
             $this->setGreen($value);
         } else if($param == 'b' or $param=='blue') {
             $this->setBlue($value);
+        } else if(substr($param, 0, 1)=='_') {
+            $this->details[$param] = $value;
         } else {
             throw new Exception('What are you trying to do here with "'.$param.'""?');
         }
@@ -810,6 +840,18 @@ class Color
         return $this->spin(180)->resetAttributes();
     }
 
+    public function triad($count=1)
+    {
+        $spin = 360 / 3 * $count;
+        return $this->spin($spin)->resetAttributes();
+    }
+
+    public function tetrad($count=1)
+    {
+        $spin = 360 / 4 * $count;
+        return $this->spin($spin)->resetAttributes();
+    }
+
     public function mix($secondColor, $weight=0.5)
     {
         if($weight>=1) { //not sure if no one will ever mix 100%
@@ -850,7 +892,7 @@ class Color
             $hsl['hue']+= 360;
         }
         $hsl['hue'] = $hsl['hue'] % 360;
-        $this->setHsl($hsl);
+        $this->setHsl($hsl)->resetAttributes();
         return $this;
     }
 
@@ -869,7 +911,7 @@ class Color
             $hsl['saturation']=0;
         }
 
-        $this->setHsl($hsl);
+        $this->setHsl($hsl)->resetAttributes();
         return $this;
     }
 
@@ -893,7 +935,7 @@ class Color
             $hsl['lightness']=0;
         }
 
-        $this->setHsl($hsl);
+        $this->setHsl($hsl)->resetAttributes();
         return $this;
     }
 
@@ -1076,11 +1118,21 @@ class Color
                 $colorName = $name;
                 $colorDetails = $details;
                 $similarColor = $color;
+
+                // stop looking if the colors are identical
+                if($this->int == $similarColor->int) {
+                    break;
+                }
             }
         }
 
         if($comparisonType!=Color::COMPARE_GREAT) {
             pow(pow($minDiff, 1/$comparisonType), 3);
+        }
+
+        if($minDiff<pow(7, $comparisonType) and $this->int != $similarColor->int)
+        {
+            $minDiff += pow(16, $comparisonType);
         }
 
         $difference = ($minDiff / 0xffffff);

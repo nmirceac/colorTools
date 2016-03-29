@@ -117,8 +117,8 @@ showImageAndPalette(new Imagick('../samples/test5.jpg'));
 showImageAndPalette('../samples/test6.jpg');
 showImageAndPalette('../samples/test7.jpg');
 
-//echo '<p>'.round(memory_get_usage()/1024/1024, 2).'</p>';
-//echo '<p>'.round(memory_get_peak_usage()/1024/1024, 2).'</p>';
+echo '<p>'.round(memory_get_usage()/1024/1024, 2).'</p>';
+echo '<p>'.round(memory_get_peak_usage()/1024/1024, 2).'</p>';
 ?>
 
 

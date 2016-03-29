@@ -16,7 +16,8 @@ class Image
                 $this->imageType = 'url';
                 $this->imagePath = $image;
                 $image = file_get_contents($image);
-            } elseif (strlen($image)>255) { //assume it's the content of an image file
+            } elseif (strlen($image)>64 and strpos(substr($image, 0, 16), '/')===false) {
+                //assume it's the content of an image file
                 $this->imageType = 'string';
             } else {
                 if (!file_exists($image)) {
@@ -122,6 +123,7 @@ class Image
             throw new \Exception('This is not an image');
         }
 
+        print_r($size);
         $this->type = substr($size['mime'], 6);
         $this->mime = $size['mime'];
         $this->width = $size[0];
