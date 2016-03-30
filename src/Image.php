@@ -8,6 +8,11 @@ class Image
 
     private $imageObject = NULL;
 
+    protected $type = null;
+    protected $mime = null;
+    protected $width = null;
+    protected $height = null;
+
     public function __construct($image)
     {
         if(gettype($image)=='string')
@@ -58,6 +63,17 @@ class Image
     public static function create($image)
     {
         return new Image($image);
+    }
+
+    public function __get($param) {
+        $param = strtolower($param);
+
+        if(in_array($param, ['type', 'mime', 'width', 'height'])) {
+            return $this->$param;
+        }
+
+        throw new Exception('Unknown property '.$param);
+
     }
 
     public static function createFromColors($colorsArray=array(), $width=0, $height=0)
@@ -123,7 +139,6 @@ class Image
             throw new \Exception('This is not an image');
         }
 
-        print_r($size);
         $this->type = substr($size['mime'], 6);
         $this->mime = $size['mime'];
         $this->width = $size[0];
@@ -179,12 +194,12 @@ class Image
 
     public function getImageSrc($outputType='jpeg', $outputTypeQuality=76) // the number of my apartment
     {
-        if(!is_null($this->imagePath)) {
+        if(!is_null($this->imagePath) and $this->imageType != 'file') {
             return $this->imagePath;
         } else {
             switch ($this->imageType) {
-                case 'string' :
-                    return 'data:image/'.$this->type.';base64, '.base64_encode($this->image);
+                case 'string' : case 'file' :
+                    return 'data:image/'.$this->type.';base64, '.base64_encode($this->getImageContent());
                     break;
 
                 case 'gd' : case 'imagick' :
@@ -200,12 +215,16 @@ class Image
     public function displayImage($outputType='jpeg', $outputTypeQuality=76)
     {
         if(!in_array($this->imageType, ['gd', 'imagick'])) {
-            header("Content-Type: image/".$this->type);
-        } else {
-            header("Content-Type: image/".$outputType);
+            $outputType = $this->type;
         }
-        echo $this->getImageContent();
-        exit();
+
+        if (!headers_sent($filename, $linenum)) {
+            header("Content-Type: image/".$outputType);
+        } else {
+            throw new Exception('Headers already sent by '.$filename.' at line '.$linenum);
+        }
+
+        return $this->getImageContent($outputType, $outputTypeQuality);
     }
 
     public function getImageObject()

@@ -16,7 +16,7 @@ class Analyze
     private $height = null;
     private $sampledWidth = null;
     private $sampledHeight = null;
-    public $sampledPixels = [];
+    private $sampledPixels = [];
     private $similarColorPixels = [];
 
     public function __construct($analysisOptions=array())
@@ -74,6 +74,18 @@ class Analyze
             return $this->time;
         }
 
+        if ($param == 'sampledpixels') {
+            return $this->sampledPixels;
+        }
+
+        if ($param == 'sampledpixelscount') {
+            return count($this->sampledPixels);
+        }
+
+        if ($param == 'similarcolorpixels') {
+            return $this->getSimilarColorPixels();
+        }
+
         return false;
     }
 
@@ -119,7 +131,6 @@ class Analyze
 
     public function getColors()
     {
-        //return [];
         if(is_null($this->colors)) {
             $timeStart = microtime(true);
 
@@ -190,16 +201,26 @@ class Analyze
         return $this->luma;
     }
 
+    public function getSampledPixels()
+    {
+        return $this->sampledPixels;
+    }
+
     public function getSampledPixelsImage()
     {
         return Image::createFromColors($this->sampledPixels, $this->sampledWidth, $this->sampledHeight);
     }
 
-    public function getSimilarColorImage()
+    public function getSimilarColorPixels()
     {
         if(empty($this->similarColorPixels)) {
             $this->getColors();
         }
-        return Image::createFromColors($this->similarColorPixels, $this->sampledWidth, $this->sampledHeight);
+        return $this->similarColorPixels;
+    }
+
+    public function getSimilarColorImage()
+    {
+        return Image::createFromColors($this->getSimilarColorPixels(), $this->sampledWidth, $this->sampledHeight);
     }
 }

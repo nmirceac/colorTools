@@ -12,7 +12,7 @@ class ColorTest extends PHPUnit_Framework_TestCase
          * Nothing fancy
          */
 
-        $this->assertTrue(get_class($color) == 'ColorTools\Color');
+        $this->assertInstanceOf('ColorTools\Color', $color);
 
         /*
          * Check that the default colour is int 0

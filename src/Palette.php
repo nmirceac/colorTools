@@ -9,10 +9,6 @@ class Palette
     const PALETTE_APPLE        = 4;
 
 
-//https://en.wikipedia.org/wiki/List_of_RAL_colors
-//https://en.wikipedia.org/wiki/List_of_colors_(compact)
-
-    private $index = 0;
     private $palette = null;
 
     private $colorTools = array(
@@ -64,9 +60,6 @@ class Palette
         0xffffff, 0xe7d8b1, 0xfdadc7,0x424153, 0xabbcda, 0xf5dd01
     );
 
-    public $luma = null;
-    public $histogram = null;
-    public $precision = null;
     public $colors =  null;
     public $colorsTime =  null;
 
@@ -98,6 +91,11 @@ class Palette
         if(is_null($this->palette)) {
             throw new Exception('Invalid palette selected');
         }
+    }
+
+    public static function create($paletteType = null)
+    {
+        return new Palette($paletteType);
     }
 
     public function __get($param)

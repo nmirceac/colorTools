@@ -20,6 +20,7 @@
         </whitelist>
     </filter>
     <php>
-        <env name="QUEUE_DRIVER" value="sync"/>
+        <env name="EXTENDED" value="n"/>
+        <env name="ONLINE" value="n"/>
     </php>
 </phpunit>
