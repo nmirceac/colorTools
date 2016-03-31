@@ -75,9 +75,14 @@ function showImageAndPalette($imagePath, $precision=Analyze::ADAPTIVE_PRECISION)
         <tr>';
     foreach($analysis->colors as $hex=>$coverage) {
         if($coverage>2) {
+            $coverageLabel = number_format($coverage,1);
+            if($coverage > 5) {
+                $coverageLabel .= '%';
+            }
+
             echo '<td style="color:white;text-shadow:0 0 5px black;text-align:center;background-color:'.$hex.';
-                    width:'.$coverage.'%;" title="%'.number_format($coverage,1).'">'
-                    .number_format($coverage,1).
+                    width:'.$coverage.'%;" title="'.$coverageLabel.'">'
+                    .$coverageLabel.
                 '</td>';
         }
     }

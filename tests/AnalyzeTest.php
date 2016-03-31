@@ -1,6 +1,5 @@
 <?php
 
-use ColorTools\Analyze;
 use ColorTools\Image;
 use ColorTools\Palette;
 
@@ -18,11 +17,6 @@ class AnalyzeTest extends PHPUnit_Framework_TestCase
 
         $this->assertEquals(AnalyzeTest::$analysis->precision, 2);
         $this->assertEquals(round(AnalyzeTest::$analysis->luma, 2), 0.41);
-    }
-
-    public function testHistogramObject()
-    {
-        $this->assertInstanceOf('ColorTools\Histogram', AnalyzeTest::$analysis->histogram);
     }
 
     public function testSampledPixels()
@@ -48,7 +42,9 @@ class AnalyzeTest extends PHPUnit_Framework_TestCase
 
     public function testAnalysisTime()
     {
-        $this->assertCount(4, AnalyzeTest::$analysis->time);
+        $this->assertArrayHasKey('pixelSampling', AnalyzeTest::$analysis->time);
+        $this->assertArrayHasKey('gettingLuma', AnalyzeTest::$analysis->time);
+        $this->assertArrayHasKey('gettingColors', AnalyzeTest::$analysis->time);
     }
 
     public function testCustomPrecision()

@@ -30,7 +30,7 @@ class Image
                 }
 
                 if (filesize($image) <= 11) {
-                    throw new \Exception('This is too small to be an image');
+                    throw new Exception('This is too small to be an image');
                 }
 
                 $this->imageType = 'file';
@@ -48,6 +48,9 @@ class Image
         } else if(gettype($image)=='object') {
             $class = get_class($image);
             switch ($class) {
+                case 'ColorTools\Image' :
+                    return $image;
+
                 case 'Imagick' :
                     $this->imageType = 'imagick';
 
@@ -56,13 +59,21 @@ class Image
             }
         }
 
+        if($this->imageType == null) {
+            throw new Exception('Cannot make anything of this image of type '.gettype($image));
+        }
+
         $this->image = $image;
         $this->getImageDetails();
     }
 
     public static function create($image)
     {
-        return new Image($image);
+        if(isset($image) and gettype($image)=='object' and get_class($image) == 'ColorTools\Image') {
+            return $image;
+        } else {
+            return new Image($image);
+        }
     }
 
     public function __get($param) {
@@ -79,14 +90,14 @@ class Image
     public static function createFromColors($colorsArray=array(), $width=0, $height=0)
     {
         if (empty($colorsArray)) {
-            throw new \Exception('Couldn\'t find any colors.');
+            throw new Exception('Couldn\'t find any colors.');
         }
 
         if (empty($width)) {
-            throw new \Exception('I need the width of the image');
+            throw new Exception('I need the width of the image');
         }
         if (empty($height)) {
-            throw new \Exception('I also need the height of the image');
+            throw new Exception('I also need the height of the image');
         }
 
         $image = imagecreatetruecolor($width, $height);
@@ -131,12 +142,12 @@ class Image
                 break;
 
             default:
-                throw new \Exception('Undefined image type');
+                throw new Exception('Undefined image type');
         }
 
 
         if (empty($size)) {
-            throw new \Exception('This is not an image');
+            throw new Exception('This is not an image');
         }
 
         $this->type = substr($size['mime'], 6);

@@ -4,7 +4,6 @@ use ColorTools\Image;
 
 class ImageTest extends PHPUnit_Framework_TestCase
 {
-    private $testUrl = 'https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/50px-Wikipedia-logo-v2.svg.png';
     private $testImgPath = './samples/test-small.jpg';
 
     public function testThatCheckImageClassWorks()
@@ -43,7 +42,7 @@ class ImageTest extends PHPUnit_Framework_TestCase
             $this->markTestSkipped('URL test skipped - run with ONLINE or EXTENDED environment variables');
         }
 
-        $imageUrl=$this->testUrl;
+        $imageUrl=getenv('TEST_URL');
         $image=Image::create($imageUrl);
         $this->assertEquals($image->getImageType(), 'url');
         $this->assertEquals($image->getImagePath(), $imageUrl);
@@ -121,7 +120,7 @@ class ImageTest extends PHPUnit_Framework_TestCase
         }
 
         $this->assertEquals('gd',
-            get_resource_type(Image::create($this->testUrl)->getImageObject()));
+            get_resource_type(Image::create(getenv('TEST_URL'))->getImageObject()));
     }
 
     /**

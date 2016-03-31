@@ -20,7 +20,6 @@
         </whitelist>
     </filter>
     <php>
-        <env name="EXTENDED" value="n"/>
-        <env name="ONLINE" value="n"/>
+        <env name="TEST_URL" value="http://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/50px-Wikipedia-logo-v2.svg.png" />
     </php>
 </phpunit>

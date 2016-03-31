@@ -4,9 +4,7 @@ use ColorTools\Image;
 
 class ImageOutputTest extends PHPUnit_Framework_TestCase
 {
-    private $testUrl = 'https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/50px-Wikipedia-logo-v2.svg.png';
     private $testImgPath = './samples/test-small.jpg';
-
 
     public function testCheckImageContentString()
     {
@@ -46,8 +44,8 @@ class ImageOutputTest extends PHPUnit_Framework_TestCase
             $this->markTestSkipped('URL test skipped - run with ONLINE or EXTENDED environment variables');
         }
 
-        $imageString = file_get_contents($this->testUrl);
-        $image = Image::create($this->testUrl);
+        $imageString = file_get_contents(getenv('TEST_URL'));
+        $image = Image::create(getenv('TEST_URL'));
         $this->assertEquals($image->getImageContent(), $imageString);
     }
 
@@ -57,8 +55,8 @@ class ImageOutputTest extends PHPUnit_Framework_TestCase
             $this->markTestIncomplete('URL test skipped - run with ONLINE or EXTENDED environment variables');
         }
 
-        $image = Image::create($this->testUrl);
-        $this->assertEquals($image->getImageSrc(), $this->testUrl);
+        $image = Image::create(getenv('TEST_URL'));
+        $this->assertEquals($image->getImageSrc(), getenv('TEST_URL'));
     }
 
     public function testCheckGdOutputType()

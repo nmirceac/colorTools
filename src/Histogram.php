@@ -6,23 +6,61 @@ class Histogram
 
     public function __construct($histogramData)
     {
+
+        try {
+            $image = Image::create($histogramData);
+        } catch (Exception $e) {}
+
+
+        if(isset($image) and get_class($image) == 'ColorTools\Image') {
+            $this->getHistogramDataFromSampledPixels($image->getAnalysis()->sampledPixels);
+            return $this;
+        }
+
+        if(gettype($histogramData)=='string') {
+            $array = json_decode($histogramData, true);
+            if(!is_null($array)) {
+                $histogramData = $array;
+            } else {
+                throw new Exception('This histogram string must be a valid JSON');
+            }
+        }
+
         if(gettype($histogramData)=='array')
         {
-            if(isset($histogramData['r']) and isset($histogramData['g']) and isset($histogramData['b'])) {
+            if(isset($histogramData['r'])
+                and isset($histogramData['a'])
+                and isset($histogramData['r'])
+                and isset($histogramData['g'])
+                and isset($histogramData['b'])
+                and isset($histogramData['l'])) {
                 $this->histogramData = $histogramData;
+            } else if(count($histogramData)>255
+                and gettype($histogramData[0]) == 'object' and get_class($histogramData[0]) == 'ColorTools\Color'
+                and gettype($histogramData[255]) == 'object' and get_class($histogramData[255]) == 'ColorTools\Color') {
+                $this->getHistogramDataFromSampledPixels($histogramData);
+            } else {
+                throw new Exception('This histogram/pixels array is missing some parts');
             }
         } else if(gettype($histogramData)=='object') {
             $class = get_class($histogramData);
             switch ($class) {
                 case 'ColorTools\Analyze' :
                     $this->getHistogramDataFromSampledPixels($histogramData->sampledPixels);
+                    break;
 
                 default :
                     break;
             }
+        } else {
+            throw new Exception('I got nothing about this histogram data... I give up, you win!');
         }
 
         return $this;
+    }
+
+    static function create($histogramData) {
+        return new Histogram($histogramData);
     }
 
     public function __get($param)
@@ -41,9 +79,12 @@ class Histogram
             return $this->histogramData['g'];
         }
 
-
         if ($param == 'b') {
             return $this->histogramData['b'];
+        }
+
+        if ($param == 'l') {
+            return $this->histogramData['l'];
         }
 
         return false;
@@ -59,12 +100,11 @@ class Histogram
 
 
         foreach ($sampledPixels as $color) {
-            $rgb = $color->getRgb();
-            $average = round(($rgb['red'] + $rgb['green'] * 2 + $rgb['blue']) / 4);
+            $average = round(($color -> r + $color -> g * 2 + $color -> b) / 4);
             $histogram['a'][$average]++;
-            $histogram['r'][$rgb['red']]++;
-            $histogram['g'][$rgb['green']]++;
-            $histogram['b'][$rgb['blue']]++;
+            $histogram['r'][$color -> r]++;
+            $histogram['g'][$color -> g]++;
+            $histogram['b'][$color -> b]++;
             $histogram['l'][round($color->getLuma()*255)]++;
         }
 
@@ -98,9 +138,17 @@ class Histogram
             $histogram[$type] = $h;
         }
 
-        $histogram['c'] = true;
-
         $this->histogramData = $histogram;
+    }
+
+    public function toArray()
+    {
+        return $this->histogramData;
+    }
+
+    public function serialize()
+    {
+        return json_encode($this->histogramData);
     }
 
     public function getSrc($histogram, $options=[])
@@ -131,8 +179,8 @@ class Histogram
             $histogram='c';
         }
 
-        if(!isset($this->histogramData[$histogram])) {
-            throw new Exception('Cannot find details about this historgram type');
+        if($histogram!='c' and !isset($this->histogramData[$histogram])) {
+            throw new Exception('Cannot find details about this histogram type');
         }
 
         switch($histogram) {
