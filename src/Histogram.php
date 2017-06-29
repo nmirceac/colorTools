@@ -151,7 +151,7 @@ class Histogram
         return json_encode($this->histogramData);
     }
 
-    public function getSrc($histogram, $options=[])
+    public function getSrc($histogram='c', $options=[])
     {
         return 'data:image/svg+xml;base64, '.base64_encode($this->buildHistogram($histogram, $options));
     }
