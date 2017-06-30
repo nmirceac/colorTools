@@ -16,6 +16,8 @@ class Image
     protected $width = null;
     protected $height = null;
 
+    protected $hash = null;
+
     protected $preferredEngine = self::ENGINE_GD;
 //    protected $preferredEngine = self::ENGINE_IMAGICK;
 
@@ -55,10 +57,45 @@ class Image
     const IMAGE_TYPE_FILE = 3;
     const IMAGE_TYPE_GD = 4;
     const IMAGE_TYPE_IMAGICK = 5;
-//to replace
 
     const IMAGE_OBJECT_TYPE_GD = 1;
     const IMAGE_OBJECT_TYPE_IMAGICK = 2;
+
+    const FILTER_NEGATE=0;
+    const FILTER_GRAYSCALE=1;
+    const FILTER_BRIGTHNESS=2;
+    const FILTER_CONTRAST=3;
+    const FILTER_COLORIZE=4;
+    const FILTER_EDGEDETECT=5;
+    const FILTER_EMBOSS=6;
+    const FILTER_GAUSSIAN_BLUR=7;
+    const FILTER_SELECTIVE_BLUR=8;
+    const FILTER_MEAN_REMOVAL=9;
+    const FILTER_SMOOTH=10;
+    const FILTER_PIXELATE=11;
+    const FILTER_SEPIA=21;
+    const FILTER_ENHANCE=22;
+    const FILTER_EQUALIZE=23;
+    const FILTER_AUTO_LEVEL=24;
+    const FILTER_MOTION_BLUR=25;
+    const FILTER_OIL_PAINT=26;
+    const FILTER_POSTERIZE=27;
+    const FILTER_RADIAL_BLUR=28;
+    const FILTER_SEGMENT=29;
+    const FILTER_SIGMOIDAL_CONTRAST=30;
+    const FILTER_SKETCH=31;
+    const FILTER_SOLARIZE=32;
+    const FILTER_SPREAD=33;
+    const FILTER_THRESHOLD=34;
+    const FILTER_BLACK_THRESHOLD=35;
+    const FILTER_WAVE=36;
+    const FILTER_VIGNETTE=37;
+    const FILTER_SWIRL=38;
+    const FILTER_NOISE=39;
+    const FILTER_BLUE_SHIFT=40;
+    const FILTER_CHARCOAL=41;
+    const FILTER_GAMMA=42;
+
 
     public function __construct($image)
     {
@@ -334,6 +371,24 @@ class Image
         return $this->imageObject;
     }
 
+    public function refreshImageObject()
+    {
+        if($this->imageObjectType==self::IMAGE_OBJECT_TYPE_GD) {
+            $this->image = $this->getImageObject();
+            $this->imageObject = null;
+            $this->imageType = self::IMAGE_TYPE_GD;
+            $this->imageObjectType = self::IMAGE_OBJECT_TYPE_GD;
+        } else if($this->imageObjectType==self::IMAGE_OBJECT_TYPE_IMAGICK) {
+            $this->image = $this->getImageObject();
+            $this->imageObject = null;
+            $this->imageType = self::IMAGE_TYPE_IMAGICK;
+            $this->imageObjectType = self::IMAGE_OBJECT_TYPE_IMAGICK;
+        }
+
+        $this->getImageObject();
+        return $this;
+    }
+
     public function convertObjectTypeTo($imageObjectType=null)
     {
         if(!in_array($imageObjectType, [self::IMAGE_OBJECT_TYPE_GD, self::IMAGE_OBJECT_TYPE_IMAGICK])) {
@@ -501,6 +556,7 @@ class Image
                 break;
         }
 
+        $this->hash = null;
         $this->imageObject = null;
         $this->modified = true;
         $this->width=$width;
@@ -587,12 +643,261 @@ class Image
                 break;
         }
 
+        $this->hash = null;
         $this->imageObject = null;
         $this->modified = true;
         $this->width=$width;
         $this->height=$height;
 
         return $this;
+    }
+
+    public function applyFilter($filter=null, $params=[])
+    {
+        if(is_null($filter)) {
+            throw new Exception('No filter to apply');
+        }
+
+        if(!in_array($filter, [
+            self::FILTER_NEGATE,
+            self::FILTER_GRAYSCALE,
+            self::FILTER_BRIGTHNESS,
+            self::FILTER_CONTRAST,
+            self::FILTER_COLORIZE,
+            self::FILTER_EDGEDETECT,
+            self::FILTER_EMBOSS,
+            self::FILTER_GAUSSIAN_BLUR,
+            self::FILTER_SELECTIVE_BLUR,
+            self::FILTER_MEAN_REMOVAL,
+            self::FILTER_SMOOTH,
+            self::FILTER_PIXELATE,
+            self::FILTER_SEPIA,
+            self::FILTER_ENHANCE,
+            self::FILTER_EQUALIZE,
+            self::FILTER_AUTO_LEVEL,
+            self::FILTER_MOTION_BLUR,
+            self::FILTER_OIL_PAINT,
+            self::FILTER_POSTERIZE,
+            self::FILTER_RADIAL_BLUR,
+            self::FILTER_SEGMENT,
+            self::FILTER_SIGMOIDAL_CONTRAST,
+            self::FILTER_SKETCH,
+            self::FILTER_SOLARIZE,
+            self::FILTER_SPREAD,
+            self::FILTER_THRESHOLD,
+            self::FILTER_BLACK_THRESHOLD,
+            self::FILTER_WAVE,
+            self::FILTER_VIGNETTE,
+            self::FILTER_SWIRL,
+            self::FILTER_NOISE,
+            self::FILTER_BLUE_SHIFT,
+            self::FILTER_CHARCOAL,
+            self::FILTER_GAMMA
+        ])) {
+            throw new Exception('Invalid filter');
+        }
+
+        if(in_array($filter, [self::FILTER_MEAN_REMOVAL, self::FILTER_SMOOTH])) {
+            $this->convertObjectTypeToGd();
+        }
+
+        if($filter>=self::FILTER_SEPIA) {
+            $this->convertObjectTypeToImagick();
+        }
+
+        $this->refreshImageObject();
+
+        if($this->imageObjectType==self::IMAGE_OBJECT_TYPE_GD) {
+            call_user_func_array('imagefilter', array_merge([$this->image, $filter], $params));
+            $this->imageObject = null;
+            $this->modified = true;
+        }
+
+        if($this->imageObjectType==self::IMAGE_OBJECT_TYPE_IMAGICK) {
+            switch($filter) {
+                case self::FILTER_NEGATE :
+                    $this->image->negateImage(false);
+                    break;
+
+                case self::FILTER_GRAYSCALE :
+                    $this->image->setImageColorspace(\Imagick::COLORSPACE_GRAY);
+                    break;
+
+                case self::FILTER_BRIGTHNESS :
+                    if(!method_exists($this->image, 'brightnessContrastImage')) {
+                        throw new Exception('brightnessContrastImage is only available in ImageMagick 3.3.0+');
+                    }
+                    $this->image->brightnessContrastImage($params[0]);
+                    break;
+
+                case self::FILTER_CONTRAST :
+                    if(!method_exists($this->image, 'brightnessContrastImage')) {
+                        throw new Exception('brightnessContrastImage is only available in ImageMagick 3.3.0+');
+                    }
+                    $this->image->brightnessContrastImage(0, $params[1]);
+                    break;
+
+                case self::FILTER_COLORIZE :
+                    $this->image->colorizeImage(Color::create($params)->getHex(), 1);
+                    break;
+
+                case self::FILTER_EDGEDETECT:
+                    $this->applyFilter(self::FILTER_GRAYSCALE);
+                    $this->image->edgeImage(0.5);
+                    break;
+
+                case self::FILTER_EMBOSS:
+                    $this->applyFilter(self::FILTER_GRAYSCALE);
+                    $this->image->embossImage(3, 1);
+                    break;
+
+                case self::FILTER_GAUSSIAN_BLUR:
+                    $this->image->gaussianBlurImage(1, 1);
+                    break;
+
+                case self::FILTER_SELECTIVE_BLUR:
+                    $this->image->adaptiveBlurImage(1, .5); // #ikr
+                    break;
+
+                case self::FILTER_PIXELATE:
+                    $width = $this->width;
+                    $height = $this->height;
+                    $this->image->adaptiveResizeImage($width/$params[0], $height/$params[0]);
+                    $this->image->resizeImage($width, $height,\Imagick::FILTER_BOX, 1);
+                    break;
+
+                case self::FILTER_SEPIA:
+                    $this->image->sepiaToneImage($params[0]);
+                    break;
+
+                case self::FILTER_ENHANCE:
+                    $this->image->enhanceImage();
+                    break;
+
+                case self::FILTER_EQUALIZE:
+                    $this->image->equalizeImage();
+                    break;
+
+                case self::FILTER_AUTO_LEVEL:
+                    $this->image->autoLevelImage();
+                    break;
+
+                case self::FILTER_MOTION_BLUR:
+                    $this->image->motionBlurImage($params[0], $params[1], $params[2]);
+                    break;
+
+                case self::FILTER_OIL_PAINT:
+                    $this->image->oilPaintImage($params[0]);
+                    break;
+
+                case self::FILTER_POSTERIZE:
+                    $this->image->posterizeImage($params[0], false);
+                    break;
+
+                case self::FILTER_RADIAL_BLUR:
+                    $this->image->radialBlurImage($params[0]);
+                    break;
+
+                case self::FILTER_SEGMENT:
+                    $this->image->segmentImage(\Imagick::COLORSPACE_RGB, $params[0], $params[1]);
+                    break;
+
+                case self::FILTER_SIGMOIDAL_CONTRAST:
+                    $this->image->sigmoidalContrastImage($params[0], $params[1], $params[2]);
+                    break;
+
+                case self::FILTER_SKETCH:
+                    $this->image->sketchImage($params[0], $params[1], $params[2]);
+                    break;
+
+                case self::FILTER_SOLARIZE:
+                    $this->image->solarizeImage($params[0]);
+                    break;
+
+                case self::FILTER_SPREAD:
+                    $this->image->spreadImage($params[0]);
+                    break;
+
+                case self::FILTER_THRESHOLD:
+                    $this->image->whiteThresholdImage(Color::create($params)->getHex());
+                    break;
+
+                case self::FILTER_BLACK_THRESHOLD:
+                    $this->image->blackThresholdImage(Color::create($params)->getHex());
+                    break;
+
+                case self::FILTER_WAVE:
+                    $this->image->waveImage($params[0], $params[1]);
+                    break;
+
+                case self::FILTER_VIGNETTE:
+                    $this->image->vignetteImage($params[0], $params[1], $params[2], $params[3]);
+                    break;
+
+                case self::FILTER_SWIRL:
+                    $this->image->swirlImage($params[0]);
+                    break;
+
+                case self::FILTER_NOISE:
+                    $this->image->addNoiseImage($params[0]);
+                    break;
+
+                case self::FILTER_BLUE_SHIFT:
+                    $this->image->blueShiftImage($params[0]);
+                    break;
+
+                case self::FILTER_CHARCOAL:
+                    $this->image->charcoalImage($params[0], $params[1]);
+                    break;
+
+                case self::FILTER_GAMMA:
+                    $this->image->gammaImage($params[0]);
+                    break;
+
+                default:
+                    break;
+            }
+
+            $this->imageObject = null;
+            $this->modified = true;
+        }
+
+        return $this;
+    }
+
+    public function getHash()
+    {
+        if(is_null($this->hash)) {
+            $this->getImageObject();
+            $this->hash = md5($this->getImageContent('jpeg', '0'));
+        }
+        return $this->hash;
+    }
+
+    public function serializeDetails()
+    {
+        return [
+            'width'=>$this->width,
+            'height'=>$this->height,
+            'hash'=>$this->getHash()
+        ];
+    }
+
+    public function serializeAnalysis($analysisOptions=array())
+    {
+        $analysis = $this->getAnalysis($analysisOptions);
+
+        return [
+            'luma'=>$analysis->luma,
+            'histogram'=>$analysis->histogram->toArray(),
+            'colors'=>$analysis->getColors(),
+        ];
+    }
+
+    public function serializeComplete($allowedParams = ['width', 'height', 'hash', 'luma', 'colors'], $analysisOptions=array())
+    {
+        $information = array_merge($this->serializeDetails(), $this->serializeAnalysis());
+        return array_intersect_key($information, array_flip($allowedParams));
     }
 
     public function getAnalysis($analysisOptions=array())
