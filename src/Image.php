@@ -16,6 +16,8 @@ class Image
     protected $width = null;
     protected $height = null;
 
+    protected $exif = null;
+
     protected $hash = null;
 
     protected $preferredEngine = self::ENGINE_GD;
@@ -45,6 +47,10 @@ class Image
     const CROP_ANCHOR_RIGHT=2;
     const CROP_ANCHOR_TOP=3;
     const CROP_ANCHOR_BOTTOM=4;
+
+    const FLIP_HORIZONTAL = 1;
+    const FLIP_VERTICAL = 2;
+    const FLIP_BOTH = 3;
 
     const RESIZE_ENGINE_NATIVE=0;
     const RESIZE_ENGINE_GD=1;
@@ -150,6 +156,7 @@ class Image
         }
 
         $this->image = $image;
+        $this->getExifInfo();
         $this->getImageDetails();
     }
 
@@ -207,6 +214,30 @@ class Image
 
     public function getImageType(){
         return $this->imageType;
+    }
+
+    private function processImageSizes()
+    {
+        $this->refreshImageObject();
+
+        switch($this->imageObjectType) {
+            case self::IMAGE_OBJECT_TYPE_GD :
+                $this->width = imagesx($this->image);
+                $this->height = imagesy($this->image);
+                return true;
+                break;
+
+            case self::IMAGE_OBJECT_TYPE_IMAGICK :
+                $this->width = $this->image->getImageWidth();
+                $this->height = $this->image->getImageHeight();
+                return true;
+                break;
+
+            default:
+                break;
+        }
+
+        return $this;
     }
 
     private function getImageDetails()
@@ -559,8 +590,8 @@ class Image
         $this->hash = null;
         $this->imageObject = null;
         $this->modified = true;
-        $this->width=$width;
-        $this->height=$height;
+
+        $this->processImageSizes();
 
         return $this;
     }
@@ -865,6 +896,102 @@ class Image
         return $this;
     }
 
+    public function doRotate($angle=0)
+    {
+        $this->refreshImageObject();
+
+        switch ($this->imageObjectType) {
+            case self::IMAGE_OBJECT_TYPE_GD:
+                $image = imagerotate($this->image, $angle, 0);
+                imagedestroy($this->image);
+                $this->image = $image;
+                $this->imageType = self::IMAGE_TYPE_GD;
+                break;
+
+            case self::IMAGE_OBJECT_TYPE_IMAGICK:
+
+                $this->image->rotateImage(new \ImagickPixel('#00000000'), $angle);
+                $this->imageType = self::IMAGE_TYPE_IMAGICK;
+                break;
+
+            default:
+                break;
+        }
+
+        $this->processImageSizes();
+        $this->getImageObject();
+
+        return $this;
+    }
+
+    public function autoRotate()
+    {
+        if (!empty($this->exif['Orientation'])) {
+            switch ($this->exif['Orientation']) {
+                case 3:
+                    $this->doRotate(180);
+                    break;
+
+                case 6:
+                    $this->doRotate(-90);
+                    break;
+
+                case 8:
+                    $this->doRotate(90);
+                    break;
+            }
+        }
+    }
+
+    public function doFlip($flipType=null)
+    {
+        if(is_null($flipType)) {
+            throw new Exception('No flip type specified');
+        }
+
+        if(!in_array($flipType, [
+            self::FLIP_HORIZONTAL,
+            self::FLIP_VERTICAL,
+            self::FLIP_BOTH
+        ])) {
+            throw new Exception('Invalid flip type');
+        }
+
+        $this->refreshImageObject();
+
+        switch ($this->imageObjectType) {
+            case self::IMAGE_OBJECT_TYPE_GD:
+                imageflip($this->image, $flipType);
+                $this->imageType = self::IMAGE_TYPE_GD;
+                break;
+
+            case self::IMAGE_OBJECT_TYPE_IMAGICK:
+                if(in_array($flipType, [self::FLIP_HORIZONTAL, self::FLIP_BOTH])) {
+                    $this->image->flopImage();
+                }
+
+                if(in_array($flipType, [self::FLIP_VERTICAL, self::FLIP_BOTH])) {
+                $this->image->flipImage();
+                }
+
+                break;
+
+            default:
+                break;
+        }
+
+        $this->getImageObject();
+
+        return $this;
+    }
+
+    public function getExifInfo()
+    {
+        if(isset($this->imagePath) and !empty($this->imagePath)) {
+            $this->exif = exif_read_data($this->imagePath);
+        }
+    }
+
     public function getHash()
     {
         if(is_null($this->hash)) {
@@ -879,6 +1006,7 @@ class Image
         return [
             'width'=>$this->width,
             'height'=>$this->height,
+            'exif'=>$this->exif,
             'hash'=>$this->getHash()
         ];
     }
@@ -894,7 +1022,7 @@ class Image
         ];
     }
 
-    public function serializeComplete($allowedParams = ['width', 'height', 'hash', 'luma', 'colors'], $analysisOptions=array())
+    public function serializeComplete($allowedParams = ['width', 'height', 'hash', 'luma', 'exif', 'colors'], $analysisOptions=array())
     {
         $information = array_merge($this->serializeDetails(), $this->serializeAnalysis());
         return array_intersect_key($information, array_flip($allowedParams));
