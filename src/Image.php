@@ -2,6 +2,8 @@
 
 class Image
 {
+    public static $settings = [];
+
     private $image = NULL;
     private $imageType = NULL;
     private $imagePath = NULL;
@@ -20,8 +22,7 @@ class Image
 
     protected $hash = null;
 
-    protected $preferredEngine = self::ENGINE_GD;
-//    protected $preferredEngine = self::ENGINE_IMAGICK;
+    protected $preferredEngine = self::ENGINE_GD; // or self::ENGINE_IMAGICK;
 
     private $resizingOptions = [
         'engine'=>self::RESIZE_ENGINE_NATIVE,
@@ -156,6 +157,7 @@ class Image
         }
 
         $this->image = $image;
+        $this->applySettings();
         $this->getExifInfo();
         $this->getImageDetails();
     }
@@ -187,6 +189,97 @@ class Image
 
         throw new Exception('Unknown property '.$param);
 
+    }
+
+    private function applySettings()
+    {
+        if(empty(self::$settings)) {
+            return false;
+        }
+
+        if(isset(self::$settings['preferredEngine'])) {
+            if(!in_array(self::$settings['preferredEngine'], [
+                self::ENGINE_GD,
+                self::ENGINE_IMAGICK
+            ])) {
+                throw new Exception('Unsupported engine... Sorry m8... Try GD or Imagick - they are both great!');
+            }
+            $this->preferredEngine = self::$settings['preferredEngine'];
+        }
+
+        if(isset(self::$settings['resizing']['engine'])) {
+            if(!in_array(self::$settings['resizing']['engine'], [
+                self::RESIZE_ENGINE_NATIVE,
+                self::RESIZE_ENGINE_GD,
+                self::RESIZE_ENGINE_IMAGICK
+            ])) {
+                throw new Exception('Unsupported resizing engine... Try not touching anything...');
+            }
+            $this->resizingOptions['engine'] = self::$settings['resizing']['engine'];
+        }
+
+        if(isset(self::$settings['resizing']['imagick']['adaptive'])) {
+            $this->resizingOptions['imagick']['adaptive'] = self::$settings['resizing']['imagick']['adaptive'];
+        }
+
+        if(isset(self::$settings['resizing']['imagick']['filter'])) {
+            if(!in_array(self::$settings['resizing']['imagick']['filter'], [
+                self::RESIZE_FILTER_AUTO,
+                \Imagick::FILTER_POINT,
+                \Imagick::FILTER_BOX,
+                \Imagick::FILTER_TRIANGLE,
+                \Imagick::FILTER_HERMITE,
+                \Imagick::FILTER_HANNING,
+                \Imagick::FILTER_HAMMING,
+                \Imagick::FILTER_BLACKMAN,
+                \Imagick::FILTER_GAUSSIAN,
+                \Imagick::FILTER_QUADRATIC,
+                \Imagick::FILTER_CUBIC,
+                \Imagick::FILTER_CATROM,
+                \Imagick::FILTER_MITCHELL,
+                \Imagick::FILTER_LANCZOS,
+                \Imagick::FILTER_BESSEL,
+                \Imagick::FILTER_SINC
+            ])) {
+                throw new Exception('Unsupported resizing filter for Imagick');
+            }
+            $this->resizingOptions['imagick']['filter'] = self::$settings['resizing']['imagick']['filter'];
+        }
+
+        if(isset(self::$settings['resizing']['imagick']['blur'])) {
+            $this->resizingOptions['imagick']['blur'] = floatval(self::$settings['resizing']['imagick']['blur']);
+        }
+
+        if(isset(self::$settings['resizing']['gd']['filter'])) {
+            if(!in_array(self::$settings['resizing']['gd']['filter'], [
+                self::RESIZE_FILTER_AUTO,
+                IMG_BESSEL,
+                IMG_BILINEAR_FIXED,
+                IMG_BICUBIC,
+                IMG_BICUBIC_FIXED,
+                IMG_BLACKMAN,
+                IMG_BOX,
+                IMG_BSPLINE,
+                IMG_CATMULLROM,
+                IMG_GAUSSIAN,
+                IMG_GENERALIZED_CUBIC,
+                IMG_HERMITE,
+                IMG_HAMMING,
+                IMG_HANNING,
+                IMG_MITCHELL,
+                IMG_POWER,
+                IMG_QUADRATIC,
+                IMG_SINC,
+                IMG_NEAREST_NEIGHBOUR,
+                IMG_WEIGHTED4,
+                IMG_TRIANGLE
+            ])) {
+                throw new Exception('Unsupported resizing filter for GD');
+            }
+            $this->resizingOptions['gd']['filter'] = self::$settings['resizing']['gd']['filter'];
+        }
+
+        print_r($this->resizingOptions);
     }
 
     public static function createFromColors($colorsArray=array(), $width=0, $height=0)
@@ -369,19 +462,25 @@ class Image
         if(is_null($this->imageObject)) {
             switch ($this->imageType) {
                 case self::IMAGE_TYPE_FILE :
-                        if($this->preferredEngine==self::ENGINE_GD) {
-                            $this->imageObject = call_user_func('imagecreatefrom' . $this->type, $this->image);
-                            $this->imageObjectType = self::IMAGE_OBJECT_TYPE_GD;
-                        } else if($this->preferredEngine==self::ENGINE_IMAGICK) {
-                            $this->imageObject = new \Imagick();
-                            $this->imageObject->readImageBlob(file_get_contents($this->image));
-                            $this->imageObjectType = self::IMAGE_OBJECT_TYPE_IMAGICK;
-                        }
+                    if($this->preferredEngine==self::ENGINE_GD) {
+                        $this->imageObject = call_user_func('imagecreatefrom' . $this->type, $this->image);
+                        $this->imageObjectType = self::IMAGE_OBJECT_TYPE_GD;
+                    } else if($this->preferredEngine==self::ENGINE_IMAGICK) {
+                        $this->imageObject = new \Imagick();
+                        $this->imageObject->readImageBlob(file_get_contents($this->image));
+                        $this->imageObjectType = self::IMAGE_OBJECT_TYPE_IMAGICK;
+                    }
                     break;
 
                 case self::IMAGE_TYPE_STRING : case self::IMAGE_TYPE_URL :
+                    if($this->preferredEngine==self::ENGINE_GD) {
                         $this->imageObject = imagecreatefromstring($this->image);
                         $this->imageObjectType = self::IMAGE_OBJECT_TYPE_GD;
+                    } else if($this->preferredEngine==self::ENGINE_IMAGICK) {
+                        $this->imageObject = new \Imagick();
+                        $this->imageObject->readImageBlob($this->image);
+                        $this->imageObjectType = self::IMAGE_OBJECT_TYPE_IMAGICK;
+                    }
                     break;
 
                 case self::IMAGE_TYPE_GD :
@@ -404,6 +503,10 @@ class Image
 
     public function refreshImageObject()
     {
+        if(empty($this->imageObjectType) or empty($this->imageObject)) {
+            $this->getImageObject();
+        }
+
         if($this->imageObjectType==self::IMAGE_OBJECT_TYPE_GD) {
             $this->image = $this->getImageObject();
             $this->imageObject = null;
@@ -508,9 +611,7 @@ class Image
             throw new Exception('Invalid sizes');
         }
 
-        if(is_null($this->imageObject)) {
-            $this->getImageObject();
-        }
+        $this->refreshImageObject();
 
         if($this->resizingOptions['engine']==self::RESIZE_ENGINE_GD) {
             $this->convertObjectTypeToGd();
@@ -896,13 +997,33 @@ class Image
         return $this;
     }
 
-    public function doRotate($angle=0)
+    public function doRotate($angle=null)
     {
+        if(is_null($angle)) {
+            throw new Exception('What\'s your angle?');
+        }
+
+        $angleValue = floatval($angle);
+
+        if(empty($angleValue)) {
+            throw new Exception('This is a strange angle: '.$angle);
+        }
+
+        $angle = $angleValue;
+
+        if($angle>=360) {
+            throw new Exception('Angle should be smaller than 360');
+        }
+
+        if($angle<=-360) {
+            throw new Exception('Angle should be larger than -360');
+        }
+
         $this->refreshImageObject();
 
         switch ($this->imageObjectType) {
             case self::IMAGE_OBJECT_TYPE_GD:
-                $image = imagerotate($this->image, $angle, 0);
+                $image = imagerotate($this->image, -$angle, 0);
                 imagedestroy($this->image);
                 $this->image = $image;
                 $this->imageType = self::IMAGE_TYPE_GD;
@@ -933,11 +1054,11 @@ class Image
                     break;
 
                 case 6:
-                    $this->doRotate(-90);
+                    $this->doRotate(90);
                     break;
 
                 case 8:
-                    $this->doRotate(90);
+                    $this->doRotate(-90);
                     break;
             }
         }
@@ -988,7 +1109,9 @@ class Image
     public function getExifInfo()
     {
         if(isset($this->imagePath) and !empty($this->imagePath)) {
-            $this->exif = exif_read_data($this->imagePath);
+            if(function_exists('exif_read_data')) {
+                $this->exif = exif_read_data($this->imagePath);
+            }
         }
     }
 
@@ -1022,7 +1145,7 @@ class Image
         ];
     }
 
-    public function serializeComplete($allowedParams = ['width', 'height', 'hash', 'luma', 'exif', 'colors'], $analysisOptions=array())
+    public function serializeComplete($allowedParams = ['width', 'height', 'hash', 'luma', 'exif', 'colors', 'imageObjectType'], $analysisOptions=array())
     {
         $information = array_merge($this->serializeDetails(), $this->serializeAnalysis());
         return array_intersect_key($information, array_flip($allowedParams));
