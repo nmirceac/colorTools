@@ -2,6 +2,7 @@
 require_once('autoload.php');
 
 use ColorTools\Image as Image;
+use ColorTools\Store as Store;
 
 Image::$settings = [
     'preferredEngine' => Image::ENGINE_IMAGICK,
@@ -17,6 +18,25 @@ Image::$settings = [
         ]
     ]
 ];
+
+$image = Image::create('../samples/test.jpg');
+$image->processModifiersString('-an=4-fi=26+5-ft=640+480');
+//$image->fit(640, 480, Image::CROP_ANCHOR_BOTTOM);
+//$image->applyFilter(Image::FILTER_OIL_PAINT, [5]);
+print_r($image->getModifiersString());
+//$image->rehash();
+$store = new Store($image);
+echo "<br>";
+echo "<br>";
+echo '<img src="'.$store->publish('jpeg').'"><br><hr><br>';
+
+$image = Image::create(new Imagick('../samples/test5.jpg'));
+$store = new Store($image);
+echo "<br>";
+echo "<br>";
+$store->store();
+exit();
+
 
 
 

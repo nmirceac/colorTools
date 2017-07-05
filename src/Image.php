@@ -22,6 +22,18 @@ class Image
 
     protected $hash = null;
 
+    protected $skipNextModifier = false;
+    protected $modifiers = [];
+
+    const MODIFIER_FIT='ft';
+    const MODIFIER_CONTAIN='ct';
+    const MODIFIER_COVER='cv';
+    const MODIFIER_ANCHOR='an';
+    const MODIFIER_CROP='cr';
+    const MODIFIER_FILTER='fi';
+    const MODIFIER_ROTATE='ro';
+    const MODIFIER_FLIP='fl';
+
     protected $preferredEngine = self::ENGINE_GD; // or self::ENGINE_IMAGICK;
 
     private $resizingOptions = [
@@ -112,9 +124,11 @@ class Image
                 $this->imageType = self::IMAGE_TYPE_URL;
                 $this->imagePath = $image;
                 $image = file_get_contents($image);
+                $this->hash = md5($image);
             } elseif (strlen($image)>64 and strpos(substr($image, 0, 16), '/')===false) {
                 //assume it's the content of an image file
                 $this->imageType = self::IMAGE_TYPE_STRING;
+                $this->hash = md5($image);
             } else {
                 if (!file_exists($image)) {
                     throw new Exception('Invalid filename');
@@ -125,7 +139,8 @@ class Image
                 }
 
                 $this->imageType = self::IMAGE_TYPE_FILE;
-                $this->imagePath = $image;
+                $this->imagePath = realpath($image);
+                $this->hash = md5_file($image);
             }
         } else if(gettype($image)=='resource') {
             $resourceType = get_resource_type($image);
@@ -189,6 +204,123 @@ class Image
 
         throw new Exception('Unknown property '.$param);
 
+    }
+
+    private function addModifier($modifier, $params=[])
+    {
+        if($this->skipNextModifier) {
+            $this->skipNextModifier = false;
+        } else {
+            $this->modifiers[$modifier] = $params;
+        }
+
+        return $this;
+    }
+
+    private function skipNextModifier()
+    {
+        $this->skipNextModifier = true;
+        return $this;
+    }
+
+    public function getModifiers()
+    {
+        return $this->modifiers;
+    }
+
+    public function getModifiersString()
+    {
+        $modifiers = $this->modifiers;
+        ksort($modifiers);
+        $output = '';
+        foreach($modifiers as $modifier=>$params) {
+            foreach($params as $paramId=>$param) {
+                if(is_array($param)) {
+                    $params[$paramId] = implode(':', $param);
+                }
+            }
+
+            $output.='-'.$modifier.'='.implode('+', $params);
+        }
+
+        return $output;
+    }
+
+    public function processModifiersString($modifiersString='')
+    {
+        $filters = [];
+
+        $modifiers = explode('-', $modifiersString);
+        foreach($modifiers as $modifierPart) {
+            if(empty($modifierPart)) {
+                continue;
+            }
+
+            $modifierPart = explode('=', $modifierPart);
+            $modifier = $modifierPart[0];
+            if(isset($modifierPart[1])) {
+                $params = explode('+', $modifierPart[1]);
+            } else {
+                $params = [];
+            }
+
+            if(!in_array($modifier, [
+                self::MODIFIER_FIT,
+                self::MODIFIER_CONTAIN,
+                self::MODIFIER_COVER,
+                self::MODIFIER_ANCHOR,
+                self::MODIFIER_CROP,
+                self::MODIFIER_FILTER,
+                self::MODIFIER_ROTATE,
+                self::MODIFIER_FLIP
+            ])) {
+                throw new Exception('Problem processing the modifier string - unknown modifier: '.$modifier);
+            }
+
+            switch($modifier) {
+                case self::MODIFIER_ANCHOR:
+                    $this->setCropAnchor($params[0]);
+                    break;
+
+                case self::MODIFIER_FIT:
+                    $this->fit($params[0], $params[1]);
+                    break;
+
+                case self::MODIFIER_CONTAIN:
+                    $this->resizeContain($params[0], $params[1]);
+                    break;
+
+                case self::MODIFIER_COVER:
+                    $this->resizeCover($params[0], $params[1]);
+                    break;
+
+                case self::MODIFIER_CROP:
+                    $this->doCrop($params[0], $params[1]);
+                    break;
+
+                case self::MODIFIER_FILTER:
+                    $filters[$params[0]] = explode(':', $params[1]);
+                    break;
+
+                case self::MODIFIER_ROTATE:
+                    $this->doRotate($params[0]);
+                    break;
+
+                case self::MODIFIER_FLIP:
+                    $this->doFlip($params[0]);
+                    break;
+
+
+                default:
+                    break;
+            }
+        }
+
+        foreach($filters as $filter=>$params) {
+            $this->applyFilter($filter, $params);
+        }
+
+        return $this;
     }
 
     private function applySettings()
@@ -278,8 +410,6 @@ class Image
             }
             $this->resizingOptions['gd']['filter'] = self::$settings['resizing']['gd']['filter'];
         }
-
-        print_r($this->resizingOptions);
     }
 
     public static function createFromColors($colorsArray=array(), $width=0, $height=0)
@@ -374,6 +504,12 @@ class Image
         $this->width = $size[0];
         $this->height = $size[1];
         return true;
+    }
+
+    public function forceModify()
+    {
+        $this->modified = true;
+        return $this;
     }
 
     public function getImagePath()
@@ -566,9 +702,11 @@ class Image
             throw new Exception('Invalid sizes');
         }
 
-        $this->resizeCover($width, $height);
+        $this->skipNextModifier()->resizeCover($width, $height);
+        $this->skipNextModifier()->doCrop($width, $height, $cropAnchor);
+        $this->addModifier(self::MODIFIER_FIT, [$width, $height]);
 
-        return $this->doCrop($width, $height, $cropAnchor);
+        return $this;
     }
 
     public function resizeContain($width=null, $height=null)
@@ -584,6 +722,8 @@ class Image
 
         $width = $this->width / $ratio;
         $height = $this->height / $ratio;
+
+        $this->addModifier(self::MODIFIER_CONTAIN, [$width, $height]);
 
         return $this->doResize($width, $height);
     }
@@ -601,6 +741,8 @@ class Image
 
         $width = $this->width / $ratio;
         $height = $this->height / $ratio;
+
+        $this->addModifier(self::MODIFIER_COVER, [$width, $height]);
 
         return $this->doResize($width, $height);
     }
@@ -688,7 +830,7 @@ class Image
                 break;
         }
 
-        $this->hash = null;
+//        $this->hash = null; // rehashing options
         $this->imageObject = null;
         $this->modified = true;
 
@@ -711,6 +853,8 @@ class Image
 
         $this->croppingOptions['anchor'] = $cropAnchor;
 
+        $this->addModifier(self::MODIFIER_ANCHOR, [$cropAnchor]);
+
         return $this;
     }
 
@@ -719,6 +863,8 @@ class Image
         if(is_null($width) or is_null($height)) {
             throw new Exception('Invalid sizes');
         }
+
+        $this->addModifier(self::MODIFIER_CROP, [$width, $height, $cropAnchor]);
 
         if(!is_null($cropAnchor)) {
             $this->setCropAnchor($cropAnchor);
@@ -775,7 +921,7 @@ class Image
                 break;
         }
 
-        $this->hash = null;
+//        $this->hash = null; # adding rehashing function
         $this->imageObject = null;
         $this->modified = true;
         $this->width=$width;
@@ -992,6 +1138,8 @@ class Image
 
             $this->imageObject = null;
             $this->modified = true;
+
+            $this->addModifier(self::MODIFIER_FILTER, [$filter, implode(':', $params)]);
         }
 
         return $this;
@@ -1041,6 +1189,8 @@ class Image
 
         $this->processImageSizes();
         $this->getImageObject();
+
+        $this->addModifier(self::MODIFIER_ROTATE, [$angle]);
 
         return $this;
     }
@@ -1103,6 +1253,8 @@ class Image
 
         $this->getImageObject();
 
+        $this->addModifier(self::MODIFIER_FLIP, [$flipType]);
+
         return $this;
     }
 
@@ -1122,6 +1274,28 @@ class Image
             $this->hash = md5($this->getImageContent('jpeg', '0'));
         }
         return $this->hash;
+    }
+
+    public function forceHash($hash=null)
+    {
+        if(is_null($hash)) {
+            throw new Exception('The hash cannot be empty');
+        }
+
+        if(strlen($hash)!=32) {
+            throw new Exception('The hash must have 32 characters');
+        }
+
+        $this->hash = $hash;
+        return $this;
+    }
+
+    public function rehash()
+    {
+        $this->refreshImageObject();
+        $this->hash = md5($this->getImageContent('jpeg', '0'));
+        $this->modifiers = [];
+        return $this;
     }
 
     public function serializeDetails()

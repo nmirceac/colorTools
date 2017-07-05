@@ -1,0 +1,11 @@
+<IfModule mod_rewrite.c>
+    Options +FollowSymlinks
+    RewriteEngine On
+#    RewriteBase /
+
+    RewriteCond %{REQUEST_URI} /images/[a-z0-9-%=+:]*\.(jpeg|png|gif)$
+    RewriteRule ^(.{2})(.*)$ ./$1/$1$2 [L]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^(.*)$ ../router.php/$1 [L]
+</IfModule>
