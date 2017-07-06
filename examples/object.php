@@ -19,16 +19,37 @@ Image::$settings = [
     ]
 ];
 
+$storeImages = [
+    '006006c21314e4b29c74e7464579edc6',
+    '1e7c11c0d40079227e4d7f8130b46035'
+];
+
+/*
 $image = Image::create('../samples/test.jpg');
-$image->processModifiersString('-an=4-fi=26+5-ft=640+480');
-//$image->fit(640, 480, Image::CROP_ANCHOR_BOTTOM);
-//$image->applyFilter(Image::FILTER_OIL_PAINT, [5]);
-print_r($image->getModifiersString());
+//$image->processModifiersString('-an=4-fi=26+5-ft=640+480');
+$image->fit(640, 480, Image::CROP_ANCHOR_BOTTOM);
+$image->doFlip(Image::FLIP_HORIZONTAL);
+$image->applyFilter(Image::FILTER_OIL_PAINT, [5]);
+//print_r($image->getModifiersString());
 //$image->rehash();
-$store = new Store($image);
-echo "<br>";
-echo "<br>";
-echo '<img src="'.$store->publish('jpeg').'"><br><hr><br>';
+//$store = new Store($image);
+//$store = Store::findAndProcess('006006c21314e4b29c74e7464579edc6-an=4-fi=26+5-ft=640+480');
+$store = Store::findByHash('006006c21314e4b29c74e7464579edc6')->processModifiersString('-an=4-fi=26+5-ft=640+480');
+*/
+
+foreach($storeImages as $image) {
+    $store = Store::findByHash($image);
+//    ->object->doRotate('90');
+    $store->modifyImage(function(Image $img) {
+        $img->setCropAnchor(Image::CROP_ANCHOR_LEFT);
+        $img->fit(480, 480);
+    });
+
+    echo "<br>";
+    echo "<br>";
+    echo '<img src="'.$store->publish('jpeg').'"><br><hr><br>';
+}
+exit();
 
 $image = Image::create(new Imagick('../samples/test5.jpg'));
 $store = new Store($image);

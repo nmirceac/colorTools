@@ -219,6 +219,22 @@ class Store
         return $store;
     }
 
+    public function modifyImage($closure=null)
+    {
+        if(is_null($closure)) {
+            throw new Exception('Must pass a closure to the modifyImage function');
+        }
+
+        $closure($this->object);
+        return $this;
+    }
+
+    public function processModifiersString($modifiersString='')
+    {
+        $this->object->processModifiersString($modifiersString);
+        return $this;
+    }
+
     public static function findAndProcess($hashAndModifiers=null)
     {
         if(is_null($hashAndModifiers)) {
@@ -232,7 +248,7 @@ class Store
         $hash = substr($hashAndModifiers, 0, 32);
 
         $store = Store::findByHash($hash);
-        $store->object->processModifiersString(substr($hashAndModifiers, 32));
+        $store->processModifiersString(substr($hashAndModifiers, 32));
 
         return $store;
     }
