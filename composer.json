@@ -5,7 +5,7 @@
     "keywords": ["colors","palette", "histogram"],
     "homepage": "https://github.com/nmirceac/colorTools",
     "license": "GNU",
-    "minimum-stablility": "stable",
+    "minimum-stablility": "dev",
     "authors": [
         {
             "name": "Mircea Nicolae",
