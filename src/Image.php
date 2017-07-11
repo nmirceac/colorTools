@@ -25,6 +25,8 @@ class Image
     protected $skipNextModifier = false;
     protected $modifiers = [];
 
+    const FAKE_IMAGE='76';
+
     const MODIFIER_FIT='ft';
     const MODIFIER_CONTAIN='ct';
     const MODIFIER_COVER='cv';
@@ -76,6 +78,7 @@ class Image
     const IMAGE_TYPE_FILE = 3;
     const IMAGE_TYPE_GD = 4;
     const IMAGE_TYPE_IMAGICK = 5;
+    const IMAGE_TYPE_FAKE = 76;
 
     const IMAGE_OBJECT_TYPE_GD = 1;
     const IMAGE_OBJECT_TYPE_IMAGICK = 2;
@@ -118,6 +121,11 @@ class Image
 
     public function __construct($image)
     {
+        if($image==self::FAKE_IMAGE) {
+            $this->imageType = self::IMAGE_TYPE_FAKE;
+            return $this;
+        }
+
         if(gettype($image)=='string')
         {
             if(substr($image, 0, 7)=='http://' or substr($image, 0, 8)=='https://') {
@@ -715,6 +723,11 @@ class Image
             throw new Exception('Invalid sizes');
         }
 
+        $this->addModifier(self::MODIFIER_CONTAIN, [$width, $height]);
+        if($this->imageType==self::IMAGE_TYPE_FAKE) {
+            return $this;
+        }
+
         $horizontalRatio = $this->width / $width;
         $verticalRatio = $this->height / $height;
 
@@ -723,13 +736,18 @@ class Image
         $width = $this->width / $ratio;
         $height = $this->height / $ratio;
 
-        $this->addModifier(self::MODIFIER_CONTAIN, [$width, $height]);
+
 
         return $this->doResize($width, $height);
     }
 
     public function resizeCover($width=null, $height=null)
     {
+        $this->addModifier(self::MODIFIER_COVER, [$width, $height]);
+        if($this->imageType==self::IMAGE_TYPE_FAKE) {
+            return $this;
+        }
+
         if(is_null($width) or is_null($height)) {
             throw new Exception('Invalid sizes');
         }
@@ -741,8 +759,6 @@ class Image
 
         $width = $this->width / $ratio;
         $height = $this->height / $ratio;
-
-        $this->addModifier(self::MODIFIER_COVER, [$width, $height]);
 
         return $this->doResize($width, $height);
     }
@@ -865,6 +881,9 @@ class Image
         }
 
         $this->addModifier(self::MODIFIER_CROP, [$width, $height, $cropAnchor]);
+        if($this->imageType==self::IMAGE_TYPE_FAKE) {
+            return $this;
+        }
 
         if(!is_null($cropAnchor)) {
             $this->setCropAnchor($cropAnchor);
@@ -973,6 +992,11 @@ class Image
             self::FILTER_GAMMA
         ])) {
             throw new Exception('Invalid filter');
+        }
+
+        $this->addModifier(self::MODIFIER_FILTER, [$filter, implode(':', $params)]);
+        if($this->imageType==self::IMAGE_TYPE_FAKE) {
+            return $this;
         }
 
         if(in_array($filter, [self::FILTER_MEAN_REMOVAL, self::FILTER_SMOOTH])) {
@@ -1138,8 +1162,6 @@ class Image
 
             $this->imageObject = null;
             $this->modified = true;
-
-            $this->addModifier(self::MODIFIER_FILTER, [$filter, implode(':', $params)]);
         }
 
         return $this;
@@ -1167,6 +1189,11 @@ class Image
             throw new Exception('Angle should be larger than -360');
         }
 
+        $this->addModifier(self::MODIFIER_ROTATE, [$angle]);
+        if($this->imageType==self::IMAGE_TYPE_FAKE) {
+            return $this;
+        }
+
         $this->refreshImageObject();
 
         switch ($this->imageObjectType) {
@@ -1189,8 +1216,6 @@ class Image
 
         $this->processImageSizes();
         $this->getImageObject();
-
-        $this->addModifier(self::MODIFIER_ROTATE, [$angle]);
 
         return $this;
     }
@@ -1228,6 +1253,11 @@ class Image
             throw new Exception('Invalid flip type');
         }
 
+        $this->addModifier(self::MODIFIER_FLIP, [$flipType]);
+        if($this->imageType==self::IMAGE_TYPE_FAKE) {
+            return $this;
+        }
+
         $this->refreshImageObject();
 
         switch ($this->imageObjectType) {
@@ -1252,8 +1282,6 @@ class Image
         }
 
         $this->getImageObject();
-
-        $this->addModifier(self::MODIFIER_FLIP, [$flipType]);
 
         return $this;
     }

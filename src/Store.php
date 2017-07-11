@@ -229,6 +229,44 @@ class Store
         return $this;
     }
 
+    public static function getUrl($hash, $modifiers=null, $type='jpeg')
+    {
+        $path = str_replace([
+            '%hash_prefix%',
+            '%hash%'
+        ], [
+            substr($hash, 0, 2),
+            $hash
+        ], self::$publicPattern);
+
+        if(!is_null($modifiers)) {
+            if(is_callable($modifiers)) {
+                $path.=self::convertTransformationsToModifierString($modifiers);
+
+            } else if(is_string($modifiers)) {
+                $path.='-'.ltrim($modifiers, '-');
+            }
+        }
+
+        $path.='.'.$type;
+        return $path;
+    }
+
+    public static function convertTransformationsToModifierString($transformations = null)
+    {
+        if(is_null($transformations)) {
+            throw new Exception('The transformations cannot be null');
+        }
+
+        if(!is_callable($transformations)) {
+            throw new Exception('The transformations have to be callable');
+        }
+
+        $store = new Store(new Image(Image::FAKE_IMAGE));
+        $store->modifyImage($transformations);
+        return $store->object->getModifiersString();
+    }
+
     public function processModifiersString($modifiersString='')
     {
         $this->object->processModifiersString($modifiersString);

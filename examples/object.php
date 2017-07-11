@@ -37,18 +37,44 @@ $image->applyFilter(Image::FILTER_OIL_PAINT, [5]);
 $store = Store::findByHash('006006c21314e4b29c74e7464579edc6')->processModifiersString('-an=4-fi=26+5-ft=640+480');
 */
 
+$start = microtime(true);
 foreach($storeImages as $image) {
-    $store = Store::findByHash($image);
+//    $store = Store::findByHash($image);
 //    ->object->doRotate('90');
-    $store->modifyImage(function(Image $img) {
+//    $store->modifyImage(function(Image $img) {
+//        $img->setCropAnchor(Image::CROP_ANCHOR_LEFT);
+//        $img->fit(480, 480);
+//    });
+
+//    $store->modifyImage(function(Image $img) {
+//        $img->setCropAnchor(Image::CROP_ANCHOR_LEFT);
+//        $img->fit(480, 480);
+//    });
+
+    $string = Store::convertTransformationsToModifierString(function(Image $img) {
         $img->setCropAnchor(Image::CROP_ANCHOR_LEFT);
-        $img->fit(480, 480);
+        $img->fit(280, 280);
+        $img->applyFilter(Image::FILTER_OIL_PAINT, [5]);
     });
+
+//    $url = Store::getUrl($image, $string);
+    $url = Store::getUrl($image, function(Image $img) {
+        $img->setCropAnchor(Image::CROP_ANCHOR_LEFT);
+        $img->fit(280, 280);
+        $img->applyFilter(Image::FILTER_OIL_PAINT, [5]);
+    });
+
+//    $url = Store::getUrl($image, 'an=4-fi=26+5-ft=640+480');
+
+
+    echo $url;
 
     echo "<br>";
     echo "<br>";
-    echo '<img src="'.$store->publish('jpeg').'"><br><hr><br>';
+    echo '<img src="'.$url.'"><br><hr><br>';
+//    echo '<img src="'.$store->publish('jpeg').'"><br><hr><br>';
 }
+echo microtime(true)-$start;
 exit();
 
 $image = Image::create(new Imagick('../samples/test5.jpg'));
