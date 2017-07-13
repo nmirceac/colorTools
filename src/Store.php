@@ -4,6 +4,8 @@ class Store
 {
     const OBJECT_TYPE_IMAGE = 1;
 
+    public static $settings = [];
+
     private $object = null;
     private $objectType = null;
     private $size = null;
@@ -23,6 +25,8 @@ class Store
         if(is_null($storageItem)) {
             throw new Exception('No storage item here');
         }
+
+        $this->applySettings();
 
         if(gettype($storageItem)=='object' and get_class($storageItem)=='ColorTools\Image')
         {
@@ -45,6 +49,30 @@ class Store
         if(!is_null($this->temporaryFile) and file_exists($this->temporaryFile)) {
             unlink($this->temporaryFile);
         }
+    }
+
+    private function applySettings()
+    {
+        if(empty(self::$settings)) {
+            return false;
+        }
+
+        if(isset(self::$settings['storeBasePath'])) {
+            self::$storeBasePath = self::$settings['storeBasePath'];
+        }
+
+        if(isset(self::$settings['storePattern'])) {
+            self::$storePattern= self::$settings['storePattern'];
+        }
+
+        if(isset(self::$settings['publicPath'])) {
+            self::$publicPath = self::$settings['publicPath'];
+        }
+
+        if(isset(self::$settings['publicPattern'])) {
+            self::$publicPattern= self::$settings['publicPattern'];
+        }
+
     }
 
     public static function create($storageItem=null)

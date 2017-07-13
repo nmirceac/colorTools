@@ -19,10 +19,29 @@ Image::$settings = [
     ]
 ];
 
+Store::$settings = [
+    'storeBasePath'=>'stores',
+    'publicPattern'=>'imagesss/%hash%',
+    'publicPath'=>'imagesss'
+];
+
 $storeImages = [
     '006006c21314e4b29c74e7464579edc6',
     '1e7c11c0d40079227e4d7f8130b46035'
 ];
+
+$image = Image::create('../samples/test.jpg');
+//$image->processModifiersString('-an=4-fi=26+5-ft=640+480');
+$image->fit(640, 480, Image::CROP_ANCHOR_BOTTOM);
+$image->doFlip(Image::FLIP_HORIZONTAL);
+$image->applyFilter(Image::FILTER_OIL_PAINT, [5]);
+//print_r($image->getModifiersString());
+//$image->rehash();
+$store = new Store($image);
+$store->store();
+echo $store->publish();
+
+exit();
 
 /*
 $image = Image::create('../samples/test.jpg');

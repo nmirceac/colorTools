@@ -4,6 +4,12 @@ require_once('autoload.php');
 use ColorTools\Image as Image;
 use ColorTools\Store as Store;
 
+Store::$settings = [
+    'storeBasePath'=>'stores',
+    'publicPattern'=>'imagesss/%hash%',
+    'publicPath'=>'imagesss'
+];
+
 Image::$settings = [
     'preferredEngine' => Image::ENGINE_IMAGICK,
     'resizing' => [
