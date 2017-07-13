@@ -4,8 +4,6 @@ class Store
 {
     const OBJECT_TYPE_IMAGE = 1;
 
-    public static $settings = [];
-
     private $object = null;
     private $objectType = null;
     private $size = null;
@@ -25,8 +23,6 @@ class Store
         if(is_null($storageItem)) {
             throw new Exception('No storage item here');
         }
-
-        $this->applySettings();
 
         if(gettype($storageItem)=='object' and get_class($storageItem)=='ColorTools\Image')
         {
@@ -51,26 +47,26 @@ class Store
         }
     }
 
-    private function applySettings()
+    public static function settings($settings=[])
     {
-        if(empty(self::$settings)) {
+        if(empty($settings)) {
             return false;
         }
 
-        if(isset(self::$settings['storeBasePath'])) {
-            self::$storeBasePath = self::$settings['storeBasePath'];
+        if(isset($settings['storeBasePath'])) {
+            self::$storeBasePath = $settings['storeBasePath'];
         }
 
-        if(isset(self::$settings['storePattern'])) {
-            self::$storePattern= self::$settings['storePattern'];
+        if(isset($settings['storePattern'])) {
+            self::$storePattern = $settings['storePattern'];
         }
 
-        if(isset(self::$settings['publicPath'])) {
-            self::$publicPath = self::$settings['publicPath'];
+        if(isset($settings['publicPath'])) {
+            self::$publicPath = $settings['publicPath'];
         }
 
-        if(isset(self::$settings['publicPattern'])) {
-            self::$publicPattern= self::$settings['publicPattern'];
+        if(isset($settings['publicPattern'])) {
+            self::$publicPattern = $settings['publicPattern'];
         }
 
     }
@@ -314,6 +310,7 @@ class Store
         $hash = substr($hashAndModifiers, 0, 32);
 
         $store = Store::findByHash($hash);
+        $store->object->autoRotate();
         $store->processModifiersString(substr($hashAndModifiers, 32));
 
         return $store;

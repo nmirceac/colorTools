@@ -1290,7 +1290,11 @@ class Image
     {
         if(isset($this->imagePath) and !empty($this->imagePath)) {
             if(function_exists('exif_read_data')) {
-                $this->exif = exif_read_data($this->imagePath);
+                try {
+                    $this->exif = exif_read_data($this->imagePath);
+                } catch (\ErrorException $e) {
+                    return false;
+                }
             }
         }
     }
