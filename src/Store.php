@@ -264,7 +264,7 @@ class Store
         ], self::$publicPattern);
 
         if(!is_null($modifiers)) {
-            if(is_callable($modifiers)) {
+            if(is_array($modifiers) or is_callable($modifiers)) {
                 $path.=self::convertTransformationsToModifierString($modifiers);
 
             } else if(is_string($modifiers)) {
@@ -282,12 +282,21 @@ class Store
             throw new Exception('The transformations cannot be null');
         }
 
-        if(!is_callable($transformations)) {
+        if(!is_callable($transformations) and !is_array($transformations)) {
             throw new Exception('The transformations have to be callable');
         }
 
         $store = new Store(new Image(Image::FAKE_IMAGE));
-        $store->modifyImage($transformations);
+        if(is_array($transformations)) {
+            foreach($transformations as $transformationCallback) {
+                if(!is_callable($transformationCallback)) {
+                    throw new Exception('The transformations have to be callable');
+                }
+                $store->modifyImage($transformationCallback);
+            }
+        } else {
+            $store->modifyImage($transformations);
+        }
         return $store->object->getModifiersString();
     }
 
