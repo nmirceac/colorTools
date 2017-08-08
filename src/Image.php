@@ -117,6 +117,7 @@ class Image
     const FILTER_BLUE_SHIFT=40;
     const FILTER_CHARCOAL=41;
     const FILTER_GAMMA=42;
+    const FILTER_BLUR=43;
 
 
     public function __construct($image)
@@ -989,7 +990,8 @@ class Image
             self::FILTER_NOISE,
             self::FILTER_BLUE_SHIFT,
             self::FILTER_CHARCOAL,
-            self::FILTER_GAMMA
+            self::FILTER_GAMMA,
+            self::FILTER_BLUR
         ])) {
             throw new Exception('Invalid filter');
         }
@@ -1154,6 +1156,10 @@ class Image
 
                 case self::FILTER_GAMMA:
                     $this->image->gammaImage($params[0]);
+                    break;
+
+                case self::FILTER_BLUR:
+                    $this->image->blurImage($params[0], $params[1]);
                     break;
 
                 default:
