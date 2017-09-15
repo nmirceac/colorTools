@@ -106,7 +106,7 @@ class Store
         return $this->storePath;
     }
 
-    private function getPublishPath()
+    public function getPublishPath()
     {
         $path = self::$publicPath . DIRECTORY_SEPARATOR;
         $path.= str_replace([
