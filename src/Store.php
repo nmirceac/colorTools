@@ -324,4 +324,22 @@ class Store
 
         return $store;
     }
+
+    public static function optimizeFile($filePath=null)
+    {
+        if(is_null($filePath)) {
+            throw new Exception('The file path cannot be empty');
+        }
+
+        if(!file_exists($filePath)) {
+            throw new Exception('The file '.$filePath.' cannot be found');
+        }
+
+        exec('which jpegoptim', $output);
+        if(!empty($output)) {
+            exec('jpegoptim -s --all-progressive -m85 '.$filePath, $output);
+        }
+
+    }
+
 }
