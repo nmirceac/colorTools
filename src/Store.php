@@ -6,7 +6,6 @@ class Store
 
     private $object = null;
     private $objectType = null;
-    private $size = null;
 
     private $temporaryFile = null;
 
@@ -337,7 +336,7 @@ class Store
 
         exec('which jpegoptim', $output);
         if(!empty($output)) {
-            exec('jpegoptim -s --all-progressive -m85 '.$filePath, $output);
+            exec('jpegoptim -s --all-progressive -m95 '.$filePath, $output);
         }
 
     }

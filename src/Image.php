@@ -526,7 +526,7 @@ class Image
         return $this->imagePath;
     }
 
-    public function getImageContent($outputType='jpeg', $outputTypeQuality=76)
+    public function getImageContent($outputType='jpeg', $outputTypeQuality=95)
     {
         if(!is_null($this->imagePath) and !$this->modified) {
             return file_get_contents($this->imagePath);
@@ -567,7 +567,7 @@ class Image
         }
     }
 
-    public function getImageSrc($outputType='jpeg', $outputTypeQuality=76) // the number of my old apartment
+    public function getImageSrc($outputType='jpeg', $outputTypeQuality=95) // the number of my old apartment
     {
         if(!is_null($this->imagePath) and $this->imageType != self::IMAGE_TYPE_FILE and !$this->modified) {
             return $this->imagePath;
@@ -587,7 +587,7 @@ class Image
         }
     }
 
-    public function displayImage($outputType='jpeg', $outputTypeQuality=76)
+    public function displayImage($outputType='jpeg', $outputTypeQuality=95)
     {
         if(!in_array($this->imageType, [self::IMAGE_TYPE_GD, self::IMAGE_TYPE_IMAGICK])) {
             $outputType = $this->type;
