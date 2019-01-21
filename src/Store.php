@@ -132,6 +132,10 @@ class Store
         $path.= $this->storeSuffix;
         $path.= '.'.$type;
 
+        if(function_exists('public_path')) {
+            $path = public_path($path);
+        }
+
         return $path;
     }
     
@@ -266,6 +270,9 @@ class Store
         ], self::$storePattern);
 
         $path = str_replace(DIRECTORY_SEPARATOR.DIRECTORY_SEPARATOR, DIRECTORY_SEPARATOR, $path);
+        if(function_exists('public_path')) {
+            $path = public_path($path);
+        }
 
         if(file_exists($path)) {
             $store = Store::create($path);

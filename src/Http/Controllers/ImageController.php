@@ -17,7 +17,7 @@ class ImageController extends \App\Http\Controllers\Controller
         $store->publish($type);
         header('Content-type: image/'.$type);
         if(config('colortools.store.optimizeAfterPublish.'.$type, false)) {
-            \ColorTools\Store::optimizeFile(public_path($store->getPublishPath($type)));
+            \ColorTools\Store::optimizeFile($store->getPublishPath($type));
         }
         echo file_get_contents($store->getPublishPath($type));
     }
