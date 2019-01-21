@@ -3,12 +3,24 @@
 use ColorTools\Image;
 use ColorTools\Histogram;
 
-class HistogramTest extends PHPUnit_Framework_TestCase
+class HistogramTest extends PHPUnit\Framework\TestCase
 {
     private $testImgPath = './samples/test-small.jpg';
 
     public static $analysis = null;
     public static $histogram = null;
+
+    public function setup()
+    {
+        $this->assertSamples();
+    }
+
+    public function assertSamples()
+    {
+        if(!file_exists($this->testImgPath)) {
+            $this->markTestSkipped('Samples are missing - run php getSamples.php');
+        }
+    }
 
     public function testCheckThatTheClassWorks()
     {

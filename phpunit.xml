@@ -7,11 +7,25 @@
          convertNoticesToExceptions="true"
          convertWarningsToExceptions="true"
          processIsolation="false"
-         stopOnFailure="false"
-         syntaxCheck="false">
+         stopOnFailure="false">
     <testsuites>
-        <testsuite name="Application Test Suite">
+        <testsuite name="Color Tools Test Suite">
             <directory>./tests/</directory>
+        </testsuite>
+        <testsuite name="Color">
+            <file>./tests/ColorCreateTest.php</file>
+            <file>./tests/ColorFunctionsTest.php</file>
+            <file>./tests/ColorTest.php</file>
+        </testsuite>
+        <testsuite name="Histogram">
+            <file>./tests/HistogramTest.php</file>
+        </testsuite>
+        <testsuite name="Image">
+            <file>./tests/ImageTest.php</file>
+            <file>./tests/ImageOutputTest.php</file>
+        </testsuite>
+        <testsuite name="Store">
+            <file>./tests/StoreTest.php</file>
         </testsuite>
     </testsuites>
     <filter>
@@ -20,6 +34,6 @@
         </whitelist>
     </filter>
     <php>
-        <env name="TEST_URL" value="http://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/50px-Wikipedia-logo-v2.svg.png" />
+        <env name="TEST_URL" value="https://colortools.weanswer.it/samples/test-small.png" />
     </php>
 </phpunit>

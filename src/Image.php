@@ -186,6 +186,15 @@ class Image
         $this->getImageDetails();
     }
 
+    public static function settings($settings=[])
+    {
+        if(empty($settings)) {
+            return false;
+        }
+
+        self::$settings = $settings;
+    }
+
     public static function create($image)
     {
         if(isset($image) and gettype($image)=='object' and get_class($image) == 'ColorTools\Image') {
@@ -472,7 +481,7 @@ class Image
         return $this;
     }
 
-    private function getImageDetails()
+    public function getImageDetails()
     {
         switch ($this->imageType) {
             case self::IMAGE_TYPE_FILE :
@@ -512,7 +521,6 @@ class Image
         $this->mime = $size['mime'];
         $this->width = $size[0];
         $this->height = $size[1];
-        return true;
     }
 
     public function forceModify()
@@ -1294,7 +1302,7 @@ class Image
 
     public function getExifInfo()
     {
-        if(isset($this->imagePath) and !empty($this->imagePath)) {
+        if($this->type == Image::IMAGE_TYPE_FILE and isset($this->imagePath) and !empty($this->imagePath)) {
             if(function_exists('exif_read_data')) {
                 try {
                     $this->exif = exif_read_data($this->imagePath);

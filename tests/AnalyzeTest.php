@@ -4,14 +4,30 @@ use ColorTools\Image;
 use ColorTools\Palette;
 
 
-class AnalyzeTest extends PHPUnit_Framework_TestCase
+class AnalyzeTest extends PHPUnit\Framework\TestCase
 {
     public static $image = null;
     public static $analysis = null;
     private $testImgPath = './samples/test-medium.jpg';
 
+    public function setup()
+    {
+        $this->assertSamples();
+    }
+
+    public function assertSamples()
+    {
+        if(!file_exists($this->testImgPath)) {
+            $this->markTestSkipped('Samples are missing - run php getSamples.php');
+        }
+    }
+
     public function testAnalyze()
     {
+        if(!file_exists($this->testImgPath)) {
+            $this->markTestSkipped('Samples are missing - run php getSamples.php');
+        }
+
         AnalyzeTest::$image = Image::create($this->testImgPath);
         AnalyzeTest::$analysis = AnalyzeTest::$image->getAnalysis();
 

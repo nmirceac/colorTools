@@ -2,7 +2,7 @@
 
 use ColorTools\Color;
 
-class ColorCreateTest extends PHPUnit_Framework_TestCase
+class ColorCreateTest extends PHPUnit\Framework\TestCase
 {
     /**
      * @expectedException           ColorTools\Exception

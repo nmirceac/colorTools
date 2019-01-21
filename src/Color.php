@@ -127,7 +127,7 @@ class Color
                             if(max($color)>255) {
                                 throw new Exception('If this is rgb, one of the channels is over 255...');
                             }
-                            $this->value = $color[0] * 256*256 + $color[1] * 256 + $color[2];
+                            $this->value = intval($color[0]) * 256*256 + intval($color[1]) * 256 + intval($color[2]);
                         }
                     }
                 } else if(isset($this->cssColors[strtolower($color)])) {

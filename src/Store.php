@@ -105,7 +105,17 @@ class Store
         return $this->storePath;
     }
 
-    public function getPublishPath()
+    public function deleteFromStore()
+    {
+        if(file_exists($this->getStorePath())) {
+            unlink($this->getStorePath());
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public function getPublishPath($type='jpeg')
     {
         $path = self::$publicPath . DIRECTORY_SEPARATOR;
         $path.= str_replace([
@@ -120,8 +130,26 @@ class Store
 
         $path = str_replace(DIRECTORY_SEPARATOR.DIRECTORY_SEPARATOR, DIRECTORY_SEPARATOR, $path);
         $path.= $this->storeSuffix;
+        $path.= '.'.$type;
 
         return $path;
+    }
+    
+    public function getPublishedGlobSelector()
+    {
+        return substr($this->getPublishPath(''), 0, -1).'*';
+    }
+
+    public function getPublishedFiles()
+    {
+        return glob($this->getPublishedGlobSelector());
+    }
+
+    public function deletePublished()
+    {
+        foreach($this->getPublishedFiles() as $publishedFile) {
+            unlink($publishedFile);
+        }
     }
 
     private function verifyPath($path=null)
@@ -141,18 +169,14 @@ class Store
         }
     }
 
-    private function writeAtPath($filePath=null, $type=null)
+    private function writeAtPath($filePath=null, $type='jpeg')
     {
         if(is_null($filePath)) {
             throw new Exception('No file path specified');
         }
 
         if($this->objectType == self::OBJECT_TYPE_IMAGE) {
-            if(!is_null($type)) {
-                file_put_contents($filePath.'.'.$type, $this->object->getImageContent($type));
-            } else {
-                file_put_contents($filePath, $this->object->getImageContent());
-            }
+            file_put_contents($filePath, $this->object->getImageContent($type));
         }
     }
 
@@ -172,6 +196,16 @@ class Store
         return $this->object->getHash();
     }
 
+    public function getSize()
+    {
+        return filesize($this->getStorePath());
+    }
+
+    public function getType()
+    {
+        return $this->object->type;
+    }
+
     public function setSuffix($suffix='')
     {
         $this->storeSuffix=trim($suffix);
@@ -179,10 +213,10 @@ class Store
         return $this;
     }
 
-    public function store($type='jpeg')
+    public function store()
     {
         $this->verifyPath($this->getStorePath());
-        $this->writeAtPath($this->getStorePath(), $type);
+        $this->writeAtPath($this->getStorePath());
 
         return $this;
     }
@@ -190,7 +224,7 @@ class Store
     public function publish($type='jpeg')
     {
         $this->verifyPath($this->getPublishPath());
-        $this->writeAtPath($this->getPublishPath(), $type);
+        $this->writeAtPath($this->getPublishPath($type), $type);
 
         $path = str_replace([
             '%hash_prefix%',
@@ -202,19 +236,24 @@ class Store
 
         $path = str_replace(DIRECTORY_SEPARATOR.DIRECTORY_SEPARATOR, DIRECTORY_SEPARATOR, $path);
         $path.= $this->storeSuffix;
-        $path.= '.'.$type;
 
         return $path;
     }
 
+
+    /**
+     * @param string $hash
+     * @return Store
+     * @throws Exception
+     */
     public static function findByHash($hash=null)
     {
         if(is_null($hash)) {
-            throw new Exception('The hash cannot be empty');
+            throw new Exception('The hash cannot be empty', Exception::STORE_EXCEPTION_HASH_EMPTY);
         }
 
         if(strlen($hash)!=32) {
-            throw new Exception('The hash must have 32 characters');
+            throw new Exception('The hash must have 32 characters', Exception::STORE_EXCEPTION_HASH_NOT_32);
         }
 
         $path = self::$storeBasePath . DIRECTORY_SEPARATOR;
@@ -235,7 +274,7 @@ class Store
         } else if(file_exists($path.'.png')) {
             $store = Store::create($path.'.png');
         } else {
-            throw new Exception('The object with the hash '.$hash.' was not found');
+            throw new Exception('The object with the hash '.$hash.' was not found', Exception::STORE_EXCEPTION_HASH_NOT_FOUND);
         }
         $store->object->refreshImageObject()->forceModify()->forceHash($hash);
 
@@ -259,8 +298,15 @@ class Store
             '%hash%'
         ], [
             substr($hash, 0, 2),
-            $hash
+            self::getHashAndTransformations($hash, $modifiers, $type)
         ], self::$publicPattern);
+
+        return $path;
+    }
+
+    public static function getHashAndTransformations($hash, $modifiers=null, $type='jpeg')
+    {
+        $path = $hash;
 
         if(!is_null($modifiers)) {
             if(is_array($modifiers) or is_callable($modifiers)) {
@@ -305,7 +351,7 @@ class Store
         return $this;
     }
 
-    public static function findAndProcess($hashAndModifiers=null)
+    public static function findAndProcess($hashAndModifiers=null, $publish=false)
     {
         if(is_null($hashAndModifiers)) {
             throw new Exception('The hash cannot be empty');
@@ -316,10 +362,21 @@ class Store
         }
 
         $hash = substr($hashAndModifiers, 0, 32);
+        $modifiers = substr($hashAndModifiers, 32);
+
+        $type='jpeg';
+        if(strrpos($modifiers, '.')) {
+            $type = substr($modifiers, 1 + strrpos($modifiers, '.'));
+            $modifiers = substr($modifiers,  0, strrpos($modifiers, '.'));
+        }
 
         $store = Store::findByHash($hash);
         $store->object->autoRotate();
-        $store->processModifiersString(substr($hashAndModifiers, 32));
+        $store->processModifiersString($modifiers);
+
+        if($publish) {
+            $store->publish($type);
+        }
 
         return $store;
     }
@@ -334,11 +391,34 @@ class Store
             throw new Exception('The file '.$filePath.' cannot be found');
         }
 
-        exec('which jpegoptim', $output);
-        if(!empty($output)) {
-            exec('jpegoptim -s --all-progressive -m95 '.$filePath, $output);
+        if(strrpos($filePath, '.')) {
+            $type = substr($filePath, 1 + strrpos($filePath, '.'));
         }
 
-    }
+        if($type=='jpeg') {
+            exec('which jpegoptim', $jpegoptim);
+            if(empty($jpegoptim)) {
+                throw new Exception('Cannot find jpegoptim binary');
+            }
+            
+            $parameters = trim(config('colortools.store.optimizeCommand.jpegoptimParams',
+                '-s --all-progressive -m90'));
+            exec($jpegoptim[0].' '.$parameters.' '.$filePath);
+            return true;
+        }
 
+        if($type=='png') {
+            exec('which optipng', $optipng);
+            if(empty($optipng)) {
+                throw new Exception('Cannot find optipng binary');
+            }
+
+            $parameters = trim(config('colortools.store.optimizeCommand.optipngParams',
+                '-o2'));
+            exec($optipng[0].' '.$parameters.' '.$filePath, $output);
+            return true;
+        }
+
+        return false;
+    }
 }

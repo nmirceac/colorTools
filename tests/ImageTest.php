@@ -2,9 +2,21 @@
 
 use ColorTools\Image;
 
-class ImageTest extends PHPUnit_Framework_TestCase
+class ImageTest extends PHPUnit\Framework\TestCase
 {
     private $testImgPath = './samples/test-small.jpg';
+
+    public function setup()
+    {
+        $this->assertSamples();
+    }
+
+    public function assertSamples()
+    {
+        if(!file_exists($this->testImgPath)) {
+            $this->markTestSkipped('Samples are missing - run php getSamples.php');
+        }
+    }
 
     public function testThatCheckImageClassWorks()
     {
@@ -16,7 +28,7 @@ class ImageTest extends PHPUnit_Framework_TestCase
     {
         $imageString=file_get_contents($this->testImgPath);
         $image=Image::create($imageString);
-        $this->assertEquals($image->getImageType(), 'string');
+        $this->assertEquals($image->getImageType(), Image::IMAGE_TYPE_STRING);
         $this->assertEquals($image->getImagePath(), null);
         $this->assertEquals($image->type, 'jpeg');
         $this->assertEquals($image->mime, 'image/jpeg');
@@ -28,8 +40,8 @@ class ImageTest extends PHPUnit_Framework_TestCase
     {
         $imagePath=$this->testImgPath;
         $image=Image::create($imagePath);
-        $this->assertEquals($image->getImageType(), 'file');
-        $this->assertEquals($image->getImagePath(), $imagePath);
+        $this->assertEquals($image->getImageType(), Image::IMAGE_TYPE_FILE);
+        $this->assertEquals($image->getImagePath(), realpath($imagePath));
         $this->assertEquals($image->type, 'jpeg');
         $this->assertEquals($image->mime, 'image/jpeg');
         $this->assertEquals($image->width, 100);
@@ -44,19 +56,19 @@ class ImageTest extends PHPUnit_Framework_TestCase
 
         $imageUrl=getenv('TEST_URL');
         $image=Image::create($imageUrl);
-        $this->assertEquals($image->getImageType(), 'url');
+        $this->assertEquals($image->getImageType(), Image::IMAGE_TYPE_URL);
         $this->assertEquals($image->getImagePath(), $imageUrl);
         $this->assertEquals($image->type, 'png');
         $this->assertEquals($image->mime, 'image/png');
-        $this->assertEquals($image->width, 50);
-        $this->assertEquals($image->height, 46);
+        $this->assertEquals($image->width, 100);
+        $this->assertEquals($image->height, 66);
     }
 
     public function testCheckImageFromGdResource()
     {
         $gdResource = imagecreatefromgif('./samples/test.gif');
         $image=Image::create($gdResource);
-        $this->assertEquals($image->getImageType(), 'gd');
+        $this->assertEquals($image->getImageType(), Image::IMAGE_TYPE_GD);
         $this->assertEquals($image->getImagePath(), null);
         $this->assertEquals($image->type, null);
         $this->assertEquals($image->mime, null);
@@ -68,7 +80,7 @@ class ImageTest extends PHPUnit_Framework_TestCase
     {
         $imagickResource = new Imagick($this->testImgPath);
         $image=Image::create($imagickResource);
-        $this->assertEquals($image->getImageType(), 'imagick');
+        $this->assertEquals($image->getImageType(), Image::IMAGE_TYPE_IMAGICK);
         $this->assertEquals($image->getImagePath(), null);
         $this->assertEquals($image->type, null);
         $this->assertEquals($image->mime, null);
@@ -80,8 +92,8 @@ class ImageTest extends PHPUnit_Framework_TestCase
     {
         $imagePath='./samples/test-wrong-ext.png';
         $image=Image::create($imagePath);
-        $this->assertEquals($image->getImageType(), 'file');
-        $this->assertEquals($image->getImagePath(), $imagePath);
+        $this->assertEquals($image->getImageType(), Image::IMAGE_TYPE_FILE);
+        $this->assertEquals($image->getImagePath(), realpath($imagePath));
         $this->assertEquals($image->type, 'jpeg');
         $this->assertEquals($image->mime, 'image/jpeg');
         $this->assertEquals($image->width, 2464);
@@ -92,8 +104,8 @@ class ImageTest extends PHPUnit_Framework_TestCase
     {
         $imagePath='./samples/test-just-a-file';
         $image=Image::create($imagePath);
-        $this->assertEquals($image->getImageType(), 'file');
-        $this->assertEquals($image->getImagePath(), $imagePath);
+        $this->assertEquals($image->getImageType(), Image::IMAGE_TYPE_FILE);
+        $this->assertEquals($image->getImagePath(), realpath($imagePath));
         $this->assertEquals($image->type, 'jpeg');
         $this->assertEquals($image->mime, 'image/jpeg');
         $this->assertEquals($image->width, 2464);
