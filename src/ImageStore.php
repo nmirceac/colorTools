@@ -359,6 +359,8 @@ class ImageStore extends Model
         }
 
         $relationship->sync($models);
+
+        return $model->images()->where('id', $this->id)->first();
     }
 
 
