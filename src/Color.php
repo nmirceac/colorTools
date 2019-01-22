@@ -275,16 +275,7 @@ class Color
         }
 
         if($param == 'name') {
-            if(is_null($this->name)) {
-                /*
-                 * By default finding a similar Css Color
-                 */
-                if(is_null($this->similarColor)) {
-                    $this->similarColor = $this->findSimilar();
-                }
-                $this->name = $this->similarColor->name;
-            }
-            return $this->name;
+            return $this->getName()
         }
 
         if($param == 'details') {
@@ -296,11 +287,7 @@ class Color
         }
 
         if($param == 'fullname') {
-            if(!isset($this->details['color'])) {
-                $this->details['color'] = $this->findSimilar(null, $this->allColors);
-            }
-            $this->details['fullname'] = $this->details['color']->name;
-            return $this->details['fullname'];
+            $this->getFullName();
         }
 
         if($param == 'url') {
@@ -813,6 +800,29 @@ class Color
 
         $this->setRgb($r, $g, $b);
         return $this;
+    }
+
+    public function getName()
+    {
+        if(is_null($this->name)) {
+            /*
+             * By default finding a similar Css Color
+             */
+            if(is_null($this->similarColor)) {
+                $this->similarColor = $this->findSimilar();
+            }
+            $this->name = $this->similarColor->name;
+        }
+        return $this->name;
+    }
+
+    public function getFullName()
+    {
+        if(!isset($this->details['color'])) {
+            $this->details['color'] = $this->findSimilar(null, $this->allColors);
+        }
+        $this->details['fullname'] = $this->details['color']->name;
+        return $this->details['fullname'];
     }
 
     public function getGrayscale()
