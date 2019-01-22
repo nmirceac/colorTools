@@ -224,13 +224,13 @@
     echo $color->smell; // sweet
     
     // hex
-    $this->getHex();
-    $this->hex;
+    $color->getHex();
+    $color->hex;
     
     // safe
-    $this->getSafeHex();
-    $this->safe;
-    $this->safeHex;
+    $color->getSafeHex();
+    $color->safe;
+    $color->safeHex;
     
     // rgb
     $color->getRgb();
@@ -274,8 +274,8 @@
     $color->cmyk;
     
     // integer
-    $this->value;
-    $this->int;
+    $color->value;
+    $color->int;
 
 ```
 
@@ -445,7 +445,7 @@
     Image::create(file_get_contents('pathTo.jpg'));
     
     // create from URL
-    Image::create('http//domain.tld/image.jpg');
+    Image::create('http://domain.tld/image.jpg');
     
     // create from GD
     $gdResource = imagecreatefromgif('pathTo.gif');
