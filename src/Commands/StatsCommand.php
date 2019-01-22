@@ -24,14 +24,16 @@ class StatsCommand extends Command
         $published = [];
         $jpeg = [];
         $png = [];
-        foreach(ImageStore::all() as $image) {
-            foreach($image->getStore()->getPublishedFiles() as $publishedFile) {
-                $published[] = filesize($publishedFile);
-                if(substr($publishedFile, -4)=='jpeg') {
-                    $jpeg[] = filesize($publishedFile);
-                } else if(substr($publishedFile, -3)=='png') {
-                    $png[] = filesize($publishedFile);
-                }
+
+        $publicPath = public_path(config('colortools.store.publicPath'));
+
+
+        foreach(glob($publicPath.'/*/*') as $publishedFile) {
+            $published[] = filesize($publishedFile);
+            if(substr($publishedFile, -4)=='jpeg') {
+                $jpeg[] = filesize($publishedFile);
+            } else if(substr($publishedFile, -3)=='png') {
+                $png[] = filesize($publishedFile);
             }
         }
         $this->info(count($published).' published images with a total size of '.number_format(array_sum($published)/1024/1024, 2).'MB');

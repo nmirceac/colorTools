@@ -1,6 +1,7 @@
 <?php namespace ColorTools;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\File as Filesystem;
 
 /**
  * Class ImageStore
@@ -164,7 +165,7 @@ class ImageStore extends Model
         $metadata['originalPath'] = $filePath;
         $metadata['hash'] = Filesystem::hash($filePath);
 
-        return static::create($metadata, Filesystem::get($filePath));
+        return static::create($metadata, file_get_contents($filePath));
     }
 
     /**
@@ -360,7 +361,45 @@ class ImageStore extends Model
 
         $relationship->sync($models);
 
-        return $model->images()->where('id', $this->id)->first();
+        return $relationship->where('id', $this->id)->first();
+    }
+
+    public function set($model, $role='image', $details=[])
+    {
+        $modelName = get_class($model);
+        $modelName = strtolower(substr($modelName, 1 + strrpos($modelName, '\\')));
+
+        if(!method_exists($this, $modelName) and !method_exists($this, str_plural($modelName))) {
+            throw new \Exception(self::class.' missing relationship to model of type '.get_class($model));
+        }
+
+        if(method_exists($model, 'images')) {
+            $method = 'images';
+        } else {
+            throw new \Exception('Model of type '.get_class($model).' is missing a relationship to '.self::class);
+        }
+
+        if(!isset($details['name'])) {
+            $details['name'] = $this->name;
+        }
+
+        if(method_exists($model, 'image')) {
+            $method = 'image';
+        }
+
+        $relationship = $model->images();
+
+        $models = [
+            $this->id => [
+                'order'=>1,
+                'role'=>$role,
+                'details'=>json_encode($details)
+                ]
+            ];
+
+        $relationship->sync($models);
+
+        return $relationship->where('id', $this->id)->first();
     }
 
 

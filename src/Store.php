@@ -102,6 +102,10 @@ class Store
             $this->storePath = $this->storePath.$this->storeSuffix;
         }
 
+        if(function_exists('public_path')) {
+            return public_path($this->storePath);
+        }
+
         return $this->storePath;
     }
 
