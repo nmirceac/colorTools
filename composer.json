@@ -1,8 +1,8 @@
 {
     "name": "nmirceac/color-tools",
     "type": "library",
-    "description": "Color Tools for PHP 5.4",
-    "keywords": ["colors","palette", "histogram"],
+    "description": "Color Tools for Laravel,
+    "keywords": ["colors","colorTools","image","thumbnails","palette","histogram","laravel","laravel images","laravel thumbnails"],
     "homepage": "https://github.com/nmirceac/colorTools",
     "license": "proprietary",
     "minimum-stablility": "dev-master",
@@ -17,7 +17,7 @@
     "require": {
         "php": ">=5.4.0",
         "ext-gd": "*",
-        "phpunit/phpunit": "^7.5"
+        "phpunit/phpunit": "*"
     },
     "autoload": {
         "psr-4": {

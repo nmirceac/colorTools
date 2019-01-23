@@ -10,6 +10,11 @@ use Illuminate\Support\Facades\File as Filesystem;
 class ImageStore extends Model
 {
     /**
+     * @var null
+     */
+    private $relationship = null;
+
+    /**
      * @var array
      */
     public static $withPivot = ['order', 'role', 'details'];
@@ -273,6 +278,45 @@ class ImageStore extends Model
 
     /**
      * @param $model
+     * @return |null
+     * @throws \Exception
+     */
+    private function checkRelationship($model)
+    {
+        if(is_null($this->relationship)) {
+            $modelName = get_class($model);
+            $modelName = strtolower(substr($modelName, 1 + strrpos($modelName, '\\')));
+
+            if(empty($order)) {
+                $order = 'next';
+            }
+            if($order < 0) {
+                $order = 'first';
+            }
+
+
+            if(!method_exists($this, $modelName) and !method_exists($this, str_plural($modelName))) {
+                throw new \Exception(self::class.' missing relationship to model of type '.get_class($model));
+            }
+
+            if(method_exists($model, 'images')) {
+                $method = 'images';
+            } else {
+                throw new \Exception('Model of type '.get_class($model).' is missing a relationship to '.self::class);
+            }
+
+            if(!isset($details['name'])) {
+                $details['name'] = $this->name;
+            }
+
+            $this->relationship = $model->imagesRelationship();
+        }
+
+        return $this->relationship;
+    }
+
+    /**
+     * @param $model
      * @param string $role
      * @param int $order
      * @param array $details
@@ -280,126 +324,90 @@ class ImageStore extends Model
      */
     public function attach($model, $role='image', $order=0, $details=[])
     {
-        $modelName = get_class($model);
-        $modelName = strtolower(substr($modelName, 1 + strrpos($modelName, '\\')));
+        $relationship = $this->checkRelationship($model);
 
-        if(empty($order)) {
-            $order = 'next';
-        }
-        if($order < 0) {
-            $order = 'first';
-        }
-
-
-        if(!method_exists($this, $modelName) and !method_exists($this, str_plural($modelName))) {
-            throw new \Exception(self::class.' missing relationship to model of type '.get_class($model));
-        }
-
-        if(method_exists($model, 'images')) {
-            $method = 'images';
-        } else {
-            throw new \Exception('Model of type '.get_class($model).' is missing a relationship to '.self::class);
-        }
-
-        if(!isset($details['name'])) {
-            $details['name'] = $this->name;
-        }
-
-        if(method_exists($model, 'image')) {
-            $method = 'image';
-        }
-
-        $relationship = $model->images();
-
-        if($method=='images') {
-            $models = [];
-            foreach($relationship->get(['id']) as $file) {
-                $models[$file->id] = [
-                    'order'=>$file->pivot->order,
-                    'role'=>$file->pivot->role,
-                    'details'=>$file->pivot->details,
-                ];
-            }
-
-            $models[$this->id] = [
-                'order'=>$order,
-                'role'=>$role,
-                'details'=>json_encode($details)
+        $models = [];
+        foreach($relationship->get() as $file) {
+            $models[$file->id] = [
+                'order'=>$file->pivot->order,
+                'role'=>$file->pivot->role,
+                'details'=>$file->pivot->details,
             ];
+        }
 
-            if(in_array($order, ['next', 'last'])) {
-                $order = count($models);
-            } else if($order=='first') {
-                $order = 1;
+        $models[$this->id] = [
+            'order'=>$order,
+            'role'=>$role,
+            'details'=>json_encode($details)
+        ];
+
+        if(in_array($order, ['next', 'last'])) {
+            $order = count($models);
+        } else if($order=='first') {
+            $order = 1;
+        } else {
+            $order = min($order, count($models));
+        }
+
+        $newOrder = range(1, count($models));
+
+        $index = 0;
+        foreach($models as $id=>$model) {
+            if($this->id == $id) {
+                $models[$id]['order'] = $order;
             } else {
-                $order = min($order, count($models));
-            }
-
-            $newOrder = range(1, count($models));
-
-            $index = 0;
-            foreach($models as $id=>$model) {
-                if($this->id == $id) {
-                    $models[$id]['order'] = $order;
-                } else {
-                    if($order == $newOrder[$index]) {
-                        $index--;
-                    }
-                    $models[$id]['order'] = $newOrder[$index];
+                if($order == $newOrder[$index]) {
+                    $index--;
                 }
-                $index++;
+                $models[$id]['order'] = $newOrder[$index];
             }
-        } else {
-            $models = [
-                $this->id => [
-                    'order'=>0,
-                    'role'=>$role,
-                    'details'=>json_encode($details)
-                ]
-            ];
+            $index++;
         }
 
         $relationship->sync($models);
+
+        return $relationship->where('id', $this->id)->get()->first();
+    }
+
+    /**
+     * @param $model
+     * @param string $role
+     * @param array $details
+     * @param bool $deleteReplaced
+     * @return mixed
+     * @throws \Exception
+     */
+    public function set($model, $role='image', $details=[], $deleteReplaced = false)
+    {
+        $relationship = $this->checkRelationship($model);
+        $this->clear($model, $role, $deleteReplaced);
+
+        $pivotDetails = [
+            'order'=>1,
+            'role'=>$role,
+            'details'=>json_encode($details)
+        ];
+
+        $relationship->attach($this->id, $pivotDetails);
 
         return $relationship->where('id', $this->id)->first();
     }
 
-    public function set($model, $role='image', $details=[])
+    /**
+     * @param $model
+     * @param string $role
+     * @param bool $deleteReplaced
+     * @throws \Exception
+     */
+    public function clear($model, $role='image', $deleteReplaced = false)
     {
-        $modelName = get_class($model);
-        $modelName = strtolower(substr($modelName, 1 + strrpos($modelName, '\\')));
+        $relationship = $this->checkRelationship($model);
 
-        if(!method_exists($this, $modelName) and !method_exists($this, str_plural($modelName))) {
-            throw new \Exception(self::class.' missing relationship to model of type '.get_class($model));
-        }
-
-        if(method_exists($model, 'images')) {
-            $method = 'images';
+        if($deleteReplaced) {
+            $relationship->wherePivot('role', $role)->delete();
         } else {
-            throw new \Exception('Model of type '.get_class($model).' is missing a relationship to '.self::class);
+            $relationship->wherePivot('role', $role)->detach();
         }
-
-        if(!isset($details['name'])) {
-            $details['name'] = $this->name;
-        }
-
-        if(method_exists($model, 'image')) {
-            $method = 'image';
-        }
-
-        $relationship = $model->images();
-
-        $models = [
-            $this->id => [
-                'order'=>1,
-                'role'=>$role,
-                'details'=>json_encode($details)
-                ]
-            ];
-
-        $relationship->sync($models);
-
-        return $relationship->where('id', $this->id)->first();
     }
 
 
