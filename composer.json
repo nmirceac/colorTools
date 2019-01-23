@@ -1,7 +1,7 @@
 {
     "name": "nmirceac/color-tools",
     "type": "library",
-    "description": "Color Tools for Laravel,
+    "description": "Color Tools for Laravel",
     "keywords": ["colors","colorTools","image","thumbnails","palette","histogram","laravel","laravel images","laravel thumbnails"],
     "homepage": "https://github.com/nmirceac/colorTools",
     "license": "proprietary",
