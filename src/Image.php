@@ -846,7 +846,7 @@ class Image
                     ])) {
                         $filter = $this->resizingOptions['imagick']['filter'];
                     }
-                    $this->image->adaptiveResizeImage($width, $height, $filter, $this->resizingOptions['imagick']['blur']);
+                    $this->image->resizeImage($width, $height, $filter, $this->resizingOptions['imagick']['blur']);
                 }
 
                 break;

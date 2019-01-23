@@ -75,6 +75,11 @@ class Store
         return (new Store($storageItem));
     }
 
+    public function getObject()
+    {
+        return $this->object;
+    }
+
     private function getTemporaryFile()
     {
         if(is_null($this->temporaryFile)) {
@@ -376,7 +381,7 @@ class Store
         $modifiers = substr($hashAndModifiers, 32);
 
         $type='jpeg';
-        if(strrpos($modifiers, '.')) {
+        if(strrpos($modifiers, '.')!==false) {
             $type = substr($modifiers, 1 + strrpos($modifiers, '.'));
             $modifiers = substr($modifiers,  0, strrpos($modifiers, '.'));
         }

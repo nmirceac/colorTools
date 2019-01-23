@@ -275,7 +275,7 @@ class Color
         }
 
         if($param == 'name') {
-            return $this->getName()
+            return $this->getName();
         }
 
         if($param == 'details') {

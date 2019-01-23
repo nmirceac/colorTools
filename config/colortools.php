@@ -25,16 +25,16 @@ return [
     ],
 
     'image' => [
-        'preferredEngine' => \ColorTools\Image::ENGINE_IMAGICK,
+        'preferredEngine' => \ColorTools\Image::ENGINE_GD,
         'resizing' => [
             'engine'=>\ColorTools\Image::RESIZE_ENGINE_NATIVE,
             'imagick'=>[
-                'adaptive'=>true,
-                'filter'=>\ColorTools\Image::RESIZE_FILTER_AUTO,
-                'blur'=>0.25
+                'adaptive'=>false,
+                'filter'=>\Imagick::FILTER_SINC,
+                'blur'=>0.75
             ],
             'gd'=>[
-                'filter'=>\ColorTools\Image::RESIZE_FILTER_AUTO
+                'filter'=>IMG_SINC
             ]
         ]
     ]
