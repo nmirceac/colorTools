@@ -295,26 +295,12 @@ class ImageStore extends Model
             $modelName = get_class($model);
             $modelName = strtolower(substr($modelName, 1 + strrpos($modelName, '\\')));
 
-            if(empty($order)) {
-                $order = 'next';
-            }
-            if($order < 0) {
-                $order = 'first';
-            }
-
-
             if(!method_exists($this, $modelName) and !method_exists($this, str_plural($modelName))) {
                 throw new \Exception(self::class.' missing relationship to model of type '.get_class($model));
             }
 
-            if(method_exists($model, 'images')) {
-                $method = 'images';
-            } else {
+            if(!method_exists($model, 'images')) {
                 throw new \Exception('Model of type '.get_class($model).' is missing a relationship to '.self::class);
-            }
-
-            if(!isset($details['name'])) {
-                $details['name'] = $this->name;
             }
 
             $this->relationship = $model->imagesRelationship();
@@ -330,12 +316,23 @@ class ImageStore extends Model
      * @param array $details
      * @throws \Exception
      */
-    public function attach($model, $role='image', $order=0, $details=[])
+    public function attach($model, $role='images', $order=0, $details=[])
     {
         $relationship = $this->checkRelationship($model);
 
+        if(empty($order)) {
+            $order = 'next';
+        }
+        if($order < 0) {
+            $order = 'first';
+        }
+
+        if(!isset($details['name'])) {
+            $details['name'] = $this->name;
+        }
+
         $models = [];
-        foreach($relationship->get() as $file) {
+        foreach($model->filesByRole($role)->get() as $file) {
             $models[$file->id] = [
                 'order'=>$file->pivot->order,
                 'role'=>$file->pivot->role,
@@ -372,9 +369,9 @@ class ImageStore extends Model
             $index++;
         }
 
-        $relationship->sync($models);
+        $relationship->syncWithoutDetaching($models);
 
-        return $relationship->where('id', $this->id)->get()->first();
+        return $relationship->where('id', $this->id)->first();
     }
 
     /**
@@ -389,6 +386,10 @@ class ImageStore extends Model
     {
         $relationship = $this->checkRelationship($model);
         $this->clear($model, $role, $deleteReplaced);
+
+        if(!isset($details['name'])) {
+            $details['name'] = $this->name;
+        }
 
         $pivotDetails = [
             'order'=>1,

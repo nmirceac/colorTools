@@ -2,16 +2,16 @@
 
 trait HasImages
 {
-    // protected $excludedRoles;
+    // protected $excludedImagesRoles;
 
     /**
      * @return mixed
      */
     public function images() {
-        if(!empty($this->excludedRoles)) {
+        if(!empty($this->excludedImagesRoles)) {
             $query = $this->imagesRelationship();
-            foreach($this->excludedRoles as $excludedRole) {
-                $query->wherePivot('role', '!=', $this->excludedRoles);
+            foreach($this->excludedImagesRoles as $excludedImageRole) {
+                $query->wherePivot('role', '!=', $excludedImageRole);
             }
             return $query;
         }
@@ -37,7 +37,7 @@ trait HasImages
      */
     public function imageByRole($role)
     {
-        return $this->imagesRelationship()->wherePivot('role', $role)->first();
+        return $this->imagesByRole($role)->first();
     }
 
     /**
@@ -46,7 +46,7 @@ trait HasImages
      */
     public function imagesByRole($role)
     {
-        return $this->imagesRelationship()->wherePivot('role', $role)->get();
+        return $this->imagesRelationship()->wherePivot('role', $role);
     }
 
     /**
@@ -72,7 +72,7 @@ trait HasImages
         if($delete) {
             $this->imagesByRole($role)->delete();
         } else {
-            foreach($this->imagesByRole($role)->pluck('id') as $imageId) {
+            foreach($this->imagesByRole($role)->get(['id'])->pluck('id') as $imageId) {
                 $this->imagesRelationship()->detach($imageId);
             }
         }
