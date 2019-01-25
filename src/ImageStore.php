@@ -31,6 +31,14 @@ class ImageStore extends Model
     /**
      * @param $value
      */
+    public function setNameAttribute($name)
+    {
+        $this->attributes['name'] = iconv(mb_detect_encoding($name, mb_detect_order(), true), "UTF-8//IGNORE", $name);
+    }
+
+    /**
+     * @param $value
+     */
     public function setMetadataAttribute($value)
     {
         $this->attributes['metadata'] = json_encode($value);
@@ -210,7 +218,7 @@ class ImageStore extends Model
      */
     public function getContent()
     {
-        return \Storage::get(self::storagePrefix.$this->hash);
+        return $this->getStore()->getObject()->getImageContent();
     }
 
     /**

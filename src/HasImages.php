@@ -27,7 +27,8 @@ trait HasImages
             'image_associations',
             'association_id',
             'image_id'
-        )->withPivot(\App\ImageStore::$withPivot);
+        )->withPivot(\App\ImageStore::$withPivot)
+         ->orderBy('image_associations.order', 'ASC');
     }
 
     /**
@@ -71,7 +72,9 @@ trait HasImages
         if($delete) {
             $this->imagesByRole($role)->delete();
         } else {
-            $this->imagesByRole($role)->detach();
+            foreach($this->imagesByRole($role)->pluck('id') as $imageId) {
+                $this->imagesRelationship()->detach($imageId);
+            }
         }
 
     }
@@ -84,9 +87,10 @@ trait HasImages
         if($delete) {
             $this->images()->delete();
         } else {
-            $this->images()->detach();
+            foreach($this->images()->get(['id']) as $imageId) {
+                $this->imagesRelationship()->detach($imageId);
+            }
         }
-
     }
 
     /**
@@ -97,7 +101,9 @@ trait HasImages
         if($delete) {
             $this->imagesRelationship()->delete();
         } else {
-            $this->imagesRelationship()->detach();
+            foreach($this->imagesRelationship()->get(['id']) as $imageId) {
+                $this->imagesRelationship()->detach($imageId);
+            }
         }
     }
 
