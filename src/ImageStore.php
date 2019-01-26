@@ -332,7 +332,7 @@ class ImageStore extends Model
         }
 
         $models = [];
-        foreach($model->filesByRole($role)->get() as $file) {
+        foreach($model->imagesByRole($role)->get() as $file) {
             $models[$file->id] = [
                 'order'=>$file->pivot->order,
                 'role'=>$file->pivot->role,
