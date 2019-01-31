@@ -683,17 +683,17 @@ class Image
         }
 
         if($this->imageObjectType==self::IMAGE_OBJECT_TYPE_GD and $imageObjectType==self::IMAGE_OBJECT_TYPE_IMAGICK) {
-            $image = $this->getImageContent('jpeg', 100);
+            $image = $this->getImageContent('png', 100); // changed from jpeg
             imagedestroy($this->image);
             $this->image = new \Imagick();
             $this->image->readImageBlob($image);
             $this->imageObject = null;
             $this->imageType = self::IMAGE_TYPE_IMAGICK;
             $this->imageObjectType = self::IMAGE_OBJECT_TYPE_IMAGICK;
-            $this->getImageContent('jpeg', 100);
+            $this->getImageContent('png', 100); // changed from jpeg
             $this->modified = true;
         } else if($this->imageObjectType==self::IMAGE_OBJECT_TYPE_IMAGICK and $imageObjectType==self::IMAGE_OBJECT_TYPE_GD) {
-            $this->image = imagecreatefromstring($this->getImageContent('jpeg', 100));
+            $this->image = imagecreatefromstring($this->getImageContent('png', 100)); // changed from jpeg
             $this->imageObject = null;
             $this->imageType = self::IMAGE_TYPE_GD;
             $this->imageObjectType = self::IMAGE_OBJECT_TYPE_GD;
@@ -817,6 +817,11 @@ class Image
                 }
 
                 $this->image = imagescale($this->getImageObject(), $width, $height, $filter);
+                if($this->type=='png') {
+                    imagealphablending($this->image, false);
+                    imagesavealpha($this->image, true);
+                }
+
                 $this->imageType = self::IMAGE_TYPE_GD;
                 break;
 
@@ -934,6 +939,10 @@ class Image
         switch ($this->imageObjectType) {
             case self::IMAGE_OBJECT_TYPE_GD:
                 $image = imagecreatetruecolor($width, $height);
+                if($this->type=='png') {
+                    imagealphablending($image, false);
+                    imagesavealpha($image, true);
+                }
                 imagecopyresampled($image, $this->image, 0, 0, $widthOffset, $heightOffset, $width, $height, $width, $height);
                 imagedestroy($this->image);
                 $this->image = $image;
