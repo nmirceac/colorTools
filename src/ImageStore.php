@@ -26,7 +26,7 @@ class ImageStore extends Model
     /**
      * @var array
      */
-    protected $appends = ['basename', 'details'];
+    protected $appends = ['orientation', 'basename', 'details'];
 
     /**
      * @param $value
@@ -55,6 +55,38 @@ class ImageStore extends Model
     /**
      * @param $value
      */
+    public function setExifAttribute($value)
+    {
+        $this->attributes['exif'] = json_encode($value);
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getExifAttribute()
+    {
+        return json_decode($this->attributes['exif']);
+    }
+
+    /**
+     * @param $value
+     */
+    public function setColorsAttribute($value)
+    {
+        $this->attributes['colors'] = json_encode($value);
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getColorsAttribute()
+    {
+        return json_decode($this->attributes['colors']);
+    }
+
+    /**
+     * @param $value
+     */
     public function setBasenameAttribute($value)
     {
         return;
@@ -66,6 +98,22 @@ class ImageStore extends Model
     public function getBasenameAttribute()
     {
         return $this->name.'.'.$this->type;
+    }
+
+    /**
+     * @param $value
+     */
+    public function setOrientationAttribute($value)
+    {
+        return;
+    }
+
+    /**
+     * @return string
+     */
+    public function getOrientationAttribute()
+    {
+        return ($this->width >= $this->height) ? 'L' : 'P';
     }
 
     /**
@@ -134,6 +182,7 @@ class ImageStore extends Model
             return $image;
         } else {
             $store = \ColorTools\Store::create($contents);
+            $imageDetails = $store->getObject()->serializeDetails();
             $store->store();
         }
 
@@ -142,6 +191,11 @@ class ImageStore extends Model
         $image->name = $metadata['name'];
         $image->type = substr($metadata['mime'], 1 + strrpos($metadata['mime'], '/'));
         $image->size = $metadata['size'];
+        $image->width = $imageDetails['width'];
+        $image->height = $imageDetails['height'];
+
+        $image->colors = [];
+        $image->exif = [];
 
         if(!isset($metadata['extension']) or (isset($metadata['extension']) and empty($metadata['extension']))) {
             $metadata['extension'] = $image->type;

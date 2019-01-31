@@ -19,7 +19,11 @@ class CreateImagesTable extends Migration
             $table->string('name')->index();
             $table->string('type', 4)->index();
             $table->integer('size')->unsigned();
+            $table->smallInteger('width')->unsigned();
+            $table->smallInteger('height')->unsigned();
             $table->text('metadata');
+            $table->text('exif');
+            $table->text('colors');
             $table->timestamps();
         });
     }

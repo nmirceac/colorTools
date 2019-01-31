@@ -134,7 +134,7 @@ class Image
                 $this->imagePath = $image;
                 $image = file_get_contents($image);
                 $this->hash = md5($image);
-            } elseif (strlen($image)>64 and strpos(substr($image, 0, 16), '/')===false) {
+            } elseif ((strlen($image)>64 and strpos(substr($image, 0, 16), '/')===false) or strlen($image)>768) {
                 //assume it's the content of an image file
                 $this->imageType = self::IMAGE_TYPE_STRING;
                 $this->hash = md5($image);

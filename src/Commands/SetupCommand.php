@@ -67,6 +67,34 @@ class SetupCommand extends Command
             $this->comment('created .htaccess at path '.$htaccessPath);
         }
 
+        $gitIgnoreStoragePath = public_path($config['store']['storeBasePath'].DIRECTORY_SEPARATOR.'.gitignore');
+        $this->info('Checking store .gitignore');
+        if(file_exists($gitIgnoreStoragePath)) {
+            if(!is_file($gitIgnoreStoragePath)) {
+                $this->error('.gitignore exists but is a folder');
+            } else {
+                $this->comment('.gitignore exists - updating');
+                file_put_contents($gitIgnoreStoragePath, $this->generateGitIgnore());
+            }
+        } else {
+            file_put_contents($gitIgnoreStoragePath, $this->generateGitIgnore());
+            $this->comment('created .gitignore at path '.$gitIgnoreStoragePath);
+        }
+
+        $gitIgnorePublicPath = public_path($config['store']['publicPath'].DIRECTORY_SEPARATOR.'.gitignore');
+        $this->info('Checking public .gitignore');
+        if(file_exists($gitIgnorePublicPath)) {
+            if(!is_file($gitIgnorePublicPath)) {
+                $this->error('.gitignore exists but is a folder');
+            } else {
+                $this->comment('.gitignore exists - updating');
+                file_put_contents($gitIgnorePublicPath, $this->generateGitIgnore());
+            }
+        } else {
+            file_put_contents($gitIgnorePublicPath, $this->generateGitIgnore());
+            $this->comment('created .gitignore at path '.$gitIgnorePublicPath);
+        }
+
         $this->info('All done');
     }
 
@@ -84,5 +112,12 @@ class SetupCommand extends Command
         '</IfModule>'.PHP_EOL;
 
         return $htaccess;
+    }
+
+    public function generateGitIgnore()
+    {
+        $gitIgnore = '*'.PHP_EOL.'!.gitignore'.PHP_EOL;
+
+        return $gitIgnore;
     }
 }
