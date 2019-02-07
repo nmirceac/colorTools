@@ -22,5 +22,12 @@
         "psr-4": {
             "ColorTools\\": "src/"
         }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "ColorTools\\ColorToolsServiceProvider"
+            ]
+        }
     }
 }
