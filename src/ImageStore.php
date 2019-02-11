@@ -346,6 +346,10 @@ class ImageStore extends Model
     private function checkRelationship($model)
     {
         if(is_null($this->relationship)) {
+            if(!is_object($model)) {
+                throw new \Exception('Passed model variable is not an object');
+            }
+
             $modelName = get_class($model);
             $modelName = strtolower(substr($modelName, 1 + strrpos($modelName, '\\')));
 
@@ -462,7 +466,7 @@ class ImageStore extends Model
      * @param bool $deleteReplaced
      * @throws \Exception
      */
-    public function clear($model, $role='image', $deleteReplaced = false)
+    public function clear($models, $role='image', $deleteReplaced = false)
     {
         $relationship = $this->checkRelationship($model);
 
@@ -471,8 +475,9 @@ class ImageStore extends Model
         } else {
             $relationship->wherePivot('role', $role)->detach();
         }
-    }
 
+        $model->reorderImagesByRole([], $role);
+    }
 
     /**
      * @return \ColorTools\Store

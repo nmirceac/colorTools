@@ -548,6 +548,10 @@ class Image
                     $outputTypeQuality = min($outputTypeQuality, 100);
 
                     if($outputType=='png' and $outputTypeQuality>9) {
+                        if($this->imageType==self::IMAGE_TYPE_GD) {
+                            imagealphablending($this->image, false);
+                            imagesavealpha($this->image, true);
+                        }
                         $outputTypeQuality = round($outputTypeQuality/11); //the png quality scale is 0..9
                     }
 

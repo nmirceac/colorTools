@@ -50,17 +50,44 @@ trait HasImages
     }
 
     /**
+     * @param $imageIds
+     * @param bool $delete
+     */
+    public function clearImage($imageIds, $delete = false)
+    {
+        if(is_array($imageIds) or (is_object($imageIds) and $imageIds instanceof \Illuminate\Support\Collection)) {
+            $deleted = 0;
+            foreach($imageIds as $imageId) {
+                $deleted += $this->clearSingleImage($imageId, $delete);
+            }
+            return $deleted;
+        } else if(is_object($imageIds) and $imageIds instanceof \App\ImageStore) {
+            return $this->clearSingleImage($imageIds->id, $delete);
+        } else if(is_numeric($imageIds)) {
+            return $this->clearSingleImage($imageIds, $delete);
+        } else {
+            throw new \Exception('Don\'t understand the $imageIds: '.print_r($imageIds, true));
+        }
+    }
+
+    /**
      * @param $imageId
      * @param bool $delete
      */
-    public function clearImage($imageId, $delete = false)
+    public function clearSingleImage($imageId, $delete = false)
     {
+        $image = $this->imagesRelationship()->where('id', $imageId)->first();
+        if(is_null($image)) {
+            return false;
+        }
         if($delete) {
             $this->imagesRelationship()->where('id', $imageId)->delete();
+            $this->reorderImagesByRole([], $image->pivot->role);
         } else {
             $this->imagesRelationship()->detach($imageId);
+            $this->reorderImagesByRole([], $image->pivot->role);
         }
-
+        return true;
     }
 
     /**
@@ -119,17 +146,22 @@ trait HasImages
             if(empty($role)) {
                 $role = $this->imagesRelationship()->find($imageIds[0])->pivot->role;
             }
-        }
 
-        $images = $this->imagesByRole($role);
+            $images = $this->imagesByRole($role);
 
-        if($images->count()!=count($imageIds)) {
-            throw new \Exception('Wrong image order count - sent order for '.count($imageIds).' '.
-                str_plural('image', count($imageIds)).' instead of '.$images->count());
-        }
+            if($images->count()!=count($imageIds)) {
+                throw new \Exception('Wrong image order count - sent order for '.count($imageIds).' '.
+                    str_plural('image', count($imageIds)).' instead of '.$images->count());
+            }
 
-        foreach($imageIds as $order=>$imageId) {
-            $this->imagesRelationship()->find($imageId)->pivot->update(['order' => ($order+1)]);
+            foreach($imageIds as $order=>$imageId) {
+                $this->imagesRelationship()->find($imageId)->pivot->update(['order' => ($order+1)]);
+            }
+        } else {
+            $images = $this->imagesByRole($role)->get();
+            foreach($images as $order=>$image) {
+                $image->pivot->update(['order' => ($order+1)]);
+            }
         }
     }
 }
