@@ -82,11 +82,10 @@ trait HasImages
         }
         if($delete) {
             $this->imagesRelationship()->where('id', $imageId)->delete();
-            $this->reorderImagesByRole([], $image->pivot->role);
         } else {
             $this->imagesRelationship()->detach($imageId);
-            $this->reorderImagesByRole([], $image->pivot->role);
         }
+        $this->reorderImagesByRole([], $image->pivot->role);
         return true;
     }
 
