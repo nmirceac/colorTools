@@ -38,8 +38,6 @@ class ColorToolsServiceProvider extends ServiceProvider
                     __DIR__.'/../database/migrations/create_images_table.stub.php' => database_path('migrations/'.date('Y_m_d_His', time()).'_create_images_table.php'),
                     __DIR__.'/../database/migrations/create_image_associations_pivot.stub.php' => database_path('migrations/'.date('Y_m_d_His', time()+1).'_create_image_associations_pivot.php'),
                 ], 'migrations');
-            } else {
-                echo 'Skipping';
             }
         }
     }

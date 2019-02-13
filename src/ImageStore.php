@@ -466,7 +466,7 @@ class ImageStore extends Model
      * @param bool $deleteReplaced
      * @throws \Exception
      */
-    public function clear($models, $role='image', $deleteReplaced = false)
+    public function clear($model, $role='image', $deleteReplaced = false)
     {
         $relationship = $this->checkRelationship($model);
 
