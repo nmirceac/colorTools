@@ -19,8 +19,8 @@ return [
             'png'=>true
         ],
         'optimizeCommand' => [
-            'jpegoptimParams'=> '-s --all-progressive -m95',
-            'optipngParams'=> '-o2'
+            'jpegoptimParams'=> '-s --all-progressive -m90',
+            'optipngParams'=> '-strip all -o2'
         ]
     ],
 

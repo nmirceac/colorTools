@@ -57,12 +57,14 @@ class ColorToolsServiceProvider extends ServiceProvider
         $this->app->bind('command.colortools:config', Commands\ConfigCommand::class);
         $this->app->bind('command.colortools:setup', Commands\SetupCommand::class);
         $this->app->bind('command.colortools:clean', Commands\CleanCommand::class);
+        $this->app->bind('command.colortools:optimize', Commands\OptimizeCommand::class);
 
         $this->commands([
             'command.colortools:stats',
             'command.colortools:config',
             'command.colortools:setup',
             'command.colortools:clean',
+            'command.colortools:optimize',
         ]);
 
     }

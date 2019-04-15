@@ -430,7 +430,7 @@ class Store
             }
 
             $parameters = trim(config('colortools.store.optimizeCommand.optipngParams',
-                '-o2'));
+                '-strip all -o2'));
             exec($optipng[0].' '.$parameters.' '.$filePath, $output);
             return true;
         }
