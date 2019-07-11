@@ -25,6 +25,12 @@ return [
         ]
     ],
 
+    'rekognition'=> [
+        'key'=>env('AWS_KEY'),
+        'secret'=>env('AWS_SECRET'),
+        'region'=>env('AWS_REGION'),
+    ],
+
     'image' => [
         'preferredEngine' => \ColorTools\Image::ENGINE_GD,
         'resizing' => [
