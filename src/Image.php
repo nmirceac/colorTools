@@ -1,5 +1,8 @@
 <?php namespace ColorTools;
 
+use lsolesen\pel\PelJpeg;
+use lsolesen\pel\PelTag;
+
 class Image
 {
     public static $settings = [];
@@ -1294,15 +1297,20 @@ class Image
         if (!empty($this->exif['Orientation'])) {
             switch ($this->exif['Orientation']) {
                 case 3:
+                case 'Rotate 180':
                     $this->doRotate(180);
                     break;
 
                 case 6:
+                case 'Rotate 90 CW':
                     $this->doRotate(90);
                     break;
 
                 case 8:
+                case 'Rotate 270 CW':
                     $this->doRotate(-90);
+                    break;
+                default:
                     break;
             }
         }
@@ -1357,15 +1365,25 @@ class Image
 
     public function getExifInfo()
     {
-        if($this->type == Image::IMAGE_TYPE_FILE and isset($this->imagePath) and !empty($this->imagePath)) {
-            if(function_exists('exif_read_data')) {
+        if(isset($this->imagePath) and !empty($this->imagePath)) {
+            exec('which exiftool', $exiftool);
+            if($exiftool) {
                 try {
-                    $this->exif = exif_read_data($this->imagePath);
+                    exec($exiftool[0].' -j '.$this->imagePath, $exif);
+                    $exif = json_decode(implode('', $exif), true)[0];
+                    foreach($exif as $param=>$value) {
+                        if(strpos($param, 'File')!==false) {
+                            unset($exif[$param]);
+                        }
+                    }
+                    $this->exif = $exif;
                 } catch (\ErrorException $e) {
                     return false;
                 }
             }
         }
+
+        return $this->exif;
     }
 
     public function getHash()

@@ -30,7 +30,7 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     /**
      * @var array
      */
-    protected $hidden = ['metadata'];
+    protected $hidden = ['exif', 'histogram'];
 
     /**
      * @param $value
@@ -46,6 +46,22 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     public function setMetadataAttribute($value)
     {
         $this->attributes['metadata'] = json_encode($value);
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getHistogramAttribute()
+    {
+        return json_decode($this->attributes['histogram']);
+    }
+
+    /**
+     * @param $value
+     */
+    public function setHistogramAttribute($value)
+    {
+        $this->attributes['histogram'] = json_encode($value);
     }
 
     /**
@@ -229,6 +245,7 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
         $image->height = $imageDetails['height'];
 
         $image->colors = [];
+        $image->histogram = [];
         $image->exif = [];
 
         if(!isset($metadata['extension']) or (isset($metadata['extension']) and empty($metadata['extension']))) {
@@ -253,7 +270,7 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     public static function createFromPath(string $filePath)
     {
         if(!file_exists(($filePath))) {
-            throw new \Exception('File not found at path '.$filePath.' ('.base_path($filePath).')');
+            throw new \Exception('File not found at path '.$filePath.' ('.getcwd().'/'.$filePath.')');
         }
 
         if(is_dir(($filePath))) {
@@ -316,15 +333,22 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
             return $this;
         }
 
+        $this->getStore()->getObject()->getExifInfo();
+
+        echo 'asdsa';
+
         $analysis = $this->getStore()->getObject()->serializeAnalysis();
         $exif = $this->getStore()->getObject()->getExifInfo();
         $this->exif = $exif;
         $this->colors = $analysis['colors'];
+        $this->histogram = $analysis['histogram'];
 
         $metadata = $this->metadata;
         $metadata->analyzed = true;
         $metadata->luma = $analysis['luma'];
-        $metadata->histogram = $analysis['histogram'];
+        if(isset($metadata->histogram)) {
+            unset($metadata->histogram);
+        }
         $this->metadata = $metadata;
         $this->save();
 
@@ -339,7 +363,7 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     {
         $this->analyze();
 
-        return \ColorTools\Histogram::create((array) $this->metadata->histogram);
+        return \ColorTools\Histogram::create((array) $this->histogram);
     }
 
     /**

@@ -39,6 +39,12 @@ class ColorToolsServiceProvider extends ServiceProvider
                     __DIR__.'/../database/migrations/create_image_associations_pivot.stub.php' => database_path('migrations/'.date('Y_m_d_His', time()+1).'_create_image_associations_pivot.php'),
                 ], 'migrations');
             }
+
+            if(empty(glob(database_path('migrations/*_images_add_histogram.php')))) {
+                $this->publishes([
+                    __DIR__.'/../database/migrations/images_add_histogram.stub.php' => database_path('migrations/'.date('Y_m_d_His', time()).'_images_add_histogram.php'),
+                ], 'migrations');
+            }
         }
     }
 
@@ -58,6 +64,7 @@ class ColorToolsServiceProvider extends ServiceProvider
         $this->app->bind('command.colortools:setup', Commands\SetupCommand::class);
         $this->app->bind('command.colortools:clean', Commands\CleanCommand::class);
         $this->app->bind('command.colortools:optimize', Commands\OptimizeCommand::class);
+        $this->app->bind('command.colortools:analyze', Commands\AnalyzeCommand::class);
 
         $this->commands([
             'command.colortools:stats',
@@ -65,6 +72,7 @@ class ColorToolsServiceProvider extends ServiceProvider
             'command.colortools:setup',
             'command.colortools:clean',
             'command.colortools:optimize',
+            'command.colortools:analyze',
         ]);
 
     }
