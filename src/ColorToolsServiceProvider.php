@@ -45,6 +45,12 @@ class ColorToolsServiceProvider extends ServiceProvider
                     __DIR__.'/../database/migrations/images_add_histogram.stub.php' => database_path('migrations/'.date('Y_m_d_His', time()).'_images_add_histogram.php'),
                 ], 'migrations');
             }
+
+            if(empty(glob(database_path('migrations/*_images_add_ai.php')))) {
+                $this->publishes([
+                    __DIR__.'/../database/migrations/images_add_ai.stub.php' => database_path('migrations/'.date('Y_m_d_His', time()).'_images_add_ai.php'),
+                ], 'migrations');
+            }
         }
     }
 

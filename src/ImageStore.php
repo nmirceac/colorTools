@@ -30,7 +30,7 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     /**
      * @var array
      */
-    protected $hidden = ['exif', 'histogram'];
+    protected $hidden = ['exif', 'histogram', 'ai'];
 
     /**
      * @param $value
@@ -46,6 +46,22 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     public function setMetadataAttribute($value)
     {
         $this->attributes['metadata'] = json_encode($value);
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getAiAttribute()
+    {
+        return json_decode($this->attributes['ai']);
+    }
+
+    /**
+     * @param $value
+     */
+    public function setAiAttribute($value)
+    {
+        $this->attributes['ai'] = json_encode($value);
     }
 
     /**
@@ -245,6 +261,7 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
         $image->height = $imageDetails['height'];
 
         $image->colors = [];
+        $image->ai = [];
         $image->histogram = [];
         $image->exif = [];
 
@@ -333,14 +350,10 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
             return $this;
         }
 
-        $this->getStore()->getObject()->getExifInfo();
-
-        echo 'asdsa';
-
         $analysis = $this->getStore()->getObject()->serializeAnalysis();
-        $exif = $this->getStore()->getObject()->getExifInfo();
-        $this->exif = $exif;
+        $this->exif = $this->getStore()->getObject()->getExifInfo();;
         $this->colors = $analysis['colors'];
+        $this->ai = $this->getAiInfo();
         $this->histogram = $analysis['histogram'];
 
         $metadata = $this->metadata;
@@ -353,6 +366,102 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
         $this->save();
 
         return $this;
+    }
+
+    public function getAiInfo()
+    {
+        $ai = [];
+
+        if($this->width>1920 or $this->height>1920) {
+            $content = $this->getStore()->getObject()->resizeCover(1920, 1920)->getImageContent('jpeg');
+        } else {
+            $content = $this->getStore()->getObject()->getImageContent('jpeg');
+        }
+
+        if(config('colortools.rekognition.key') and config('colortools.rekognition.secret') and config('colortools.rekognition.region')) {
+            $rekognition = new \Aws\Rekognition\RekognitionClient([
+                'credentials' => (new \Aws\Credentials\Credentials(config('colortools.rekognition.key'), config('colortools.rekognition.secret'))),
+                'version' => 'latest',
+                'region' => config('colortools.rekognition.region')
+            ]);
+
+
+            try {
+                $result = $rekognition->detectLabels(array(
+                        'Image' => array(
+                            'Bytes' => $content,
+                        ),
+                        'Attributes' => array('ALL')
+                    )
+                );
+            } catch (\Aws\S3\Exception\S3Exception $exception) {
+                throw new \Exception($exception->getAwsErrorMessage());
+            }
+
+            $ai['rekognition']['labels'] = $result->toArray()['Labels'];
+
+            $searchFaces = false;
+            $searchText = false;
+
+            foreach($ai['rekognition']['labels'] as $label) {
+                if($label['Confidence']>=20) {
+                    $ai['labels'][] = $label['Name'];
+                }
+
+                if(in_array($label['Name'], ['Human', 'Person', 'People', 'Portrait'])) {
+                    $searchFaces = true;
+                }
+
+                if(in_array($label['Name'], ['Sign', 'Symbol', 'Text'])) {
+                    $searchText = true;
+                }
+            }
+
+            $ai['labels'] = array_unique($ai['labels']);
+
+            if($searchFaces) {
+                try {
+                    $result = $rekognition->detectFaces(array(
+                            'Image' => array(
+                                'Bytes' => $content,
+                            ),
+                            'Attributes' => array('ALL')
+                        )
+                    );
+                } catch (\Aws\S3\Exception\S3Exception $exception) {
+                    throw new \Exception($exception->getAwsErrorMessage());
+                }
+
+                $ai['rekognition']['faces'] = $result->toArray()['FaceDetails'];
+            }
+
+            if($searchText) {
+                try {
+                    $result = $rekognition->detectText(array(
+                            'Image' => array(
+                                'Bytes' => $content,
+                            ),
+                            'Attributes' => array('ALL')
+                        )
+                    );
+                } catch (\Aws\S3\Exception\S3Exception $exception) {
+                    throw new \Exception($exception->getAwsErrorMessage());
+                }
+
+                $ai['rekognition']['text'] = $result->toArray()['TextDetections'];
+
+                foreach($ai['rekognition']['text'] as $text) {
+                    if($text['Type']=='LINE') {
+                        $ai['text'][] = $text['DetectedText'];
+                    }
+                }
+
+                $ai['text'] = array_unique($ai['text']);
+            }
+
+        }
+
+        return $ai;
     }
 
     /**
