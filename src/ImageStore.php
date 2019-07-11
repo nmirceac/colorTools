@@ -1,13 +1,12 @@
 <?php namespace ColorTools;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\File as Filesystem;
 
 /**
  * Class ImageStore
  * @package ColorTools
  */
-class ImageStore extends Model
+class ImageStore extends \Illuminate\Database\Eloquent\Model
 {
     /**
      * @var null
@@ -27,6 +26,11 @@ class ImageStore extends Model
      * @var array
      */
     protected $appends = ['orientation', 'basename', 'details'];
+
+    /**
+     * @var array
+     */
+    protected $hidden = ['metadata'];
 
     /**
      * @param $value
@@ -50,6 +54,27 @@ class ImageStore extends Model
     public function getMetadataAttribute()
     {
         return json_decode($this->attributes['metadata']);
+    }
+
+    /**
+     * @param $value
+     */
+    public function setAnalyzedAttribute($value)
+    {
+        retun;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getAnalyzedAttribute()
+    {
+        $metadata = $this->metadata;
+        if(isset($metadata->analyzed) and !empty($metadata->analyzed)) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -138,6 +163,15 @@ class ImageStore extends Model
     }
 
     /**
+     * @param $id
+     * @return \ColorTools\ImageStore
+     */
+    public static function find($id)
+    {
+        return parent::query()->find($id);
+    }
+
+    /**
      * @param string $hash
      * @return \ColorTools\ImageStore
      */
@@ -204,6 +238,10 @@ class ImageStore extends Model
         $image->metadata = $metadata;
         $image->save();
 
+        if(config('colortools.store.analyzeAfterCreate', false)) {
+            $image->analyze();
+        }
+
         return $image;
     }
 
@@ -265,6 +303,68 @@ class ImageStore extends Model
 
         $contents = file_get_contents($fileInfo->getRealPath());
         return static::create($metadata, $contents);
+    }
+
+    /**
+     * @param bool $redo
+     * @return $this
+     * @throws \ColorTools\Exception
+     */
+    public function analyze($redo = false)
+    {
+        if($this->analyzed and !$redo) {
+            return $this;
+        }
+
+        $analysis = $this->getStore()->getObject()->serializeAnalysis();
+        $exif = $this->getStore()->getObject()->getExifInfo();
+        $this->exif = $exif;
+        $this->colors = $analysis['colors'];
+
+        $metadata = $this->metadata;
+        $metadata->analyzed = true;
+        $metadata->luma = $analysis['luma'];
+        $metadata->histogram = $analysis['histogram'];
+        $this->metadata = $metadata;
+        $this->save();
+
+        return $this;
+    }
+
+    /**
+     * @return \ColorTools\Histogram
+     * @throws \ColorTools\Exception
+     */
+    public function getHistogram()
+    {
+        $this->analyze();
+
+        return \ColorTools\Histogram::create((array) $this->metadata->histogram);
+    }
+
+    /**
+     * @param string $histogram
+     * @param array $options
+     * @return string
+     * @throws \ColorTools\Exception
+     */
+    public function getHistogramSrc($histogram='c', $options=[])
+    {
+        return $this->getHistogram()->getSrc($histogram, $options=[]);
+    }
+
+    /**
+     * @param string $histogram
+     * @param array $options
+     * @return \Illuminate\Contracts\Routing\ResponseFactory|\Symfony\Component\HttpFoundation\Response
+     * @throws \ColorTools\Exception
+     */
+    public function showHistogram($histogram='c', $options=[])
+    {
+        return response($this->getHistogram()->buildHistogram($histogram, $options=[]))
+            ->header('Content-Type', 'image/svg+xml')
+            ->header('Content-Description', $this->name.' histogram ('.$histogram.')')
+            ->header('Content-Disposition', 'inline; filename="'.$this->name.'-histogram-'.$histogram.'.svg"');
     }
 
     /**

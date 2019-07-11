@@ -14,6 +14,7 @@ return [
         'storeBasePath'=>'../store/',
         'publicPattern'=>'images/%hash%',
         'publicPath'=>'images',
+        'analyzeAfterCreate' => true,
         'optimizeAfterPublish' => [
             'jpeg'=>true,
             'png'=>true

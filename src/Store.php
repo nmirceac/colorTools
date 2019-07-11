@@ -236,8 +236,13 @@ class Store
 
     public function publish($type='jpeg')
     {
+        $writePath = $this->getPublishPath($type);
         $this->verifyPath($this->getPublishPath());
-        $this->writeAtPath($this->getPublishPath($type), $type);
+        $this->writeAtPath($writePath, $type);
+
+        if(config('colortools.store.optimizeAfterPublish.'.$type, false)) {
+            \ColorTools\Store::optimizeFile($writePath);
+        }
 
         $path = str_replace([
             '%hash_prefix%',

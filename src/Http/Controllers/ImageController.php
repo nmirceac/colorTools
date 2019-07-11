@@ -16,9 +16,11 @@ class ImageController extends \App\Http\Controllers\Controller
         $store = \ColorTools\Store::findAndProcess($urlString);
         $store->publish($type);
         header('Content-type: image/'.$type);
-        if(config('colortools.store.optimizeAfterPublish.'.$type, false)) {
-            \ColorTools\Store::optimizeFile($store->getPublishPath($type));
-        }
         echo file_get_contents($store->getPublishPath($type));
+    }
+
+    public function histogram($type='c', $id)
+    {
+        return \App\ImageStore::find($id)->showHistogram($type);
     }
 }
