@@ -85,7 +85,21 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
      */
     public function getMetadataAttribute()
     {
-        return json_decode($this->attributes['metadata']);
+        $metadata = json_decode($this->attributes['metadata']);
+        if(!isset($metadata->name)) {
+            $metadata->name = '';
+        }
+        if(!isset($metadata->caption)) {
+            $metadata->caption = '';
+        }
+        if(!isset($metadata->copyright)) {
+            $metadata->copyright = '';
+        }
+        if(!isset($metadata->tags)) {
+            $metadata->tags = [];
+        }
+
+        return $metadata;
     }
 
     /**
@@ -372,13 +386,13 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     {
         $ai = [];
 
-        if($this->width>1920 or $this->height>1920) {
-            $content = $this->getStore()->getObject()->resizeCover(1920, 1920)->getImageContent('jpeg');
-        } else {
-            $content = $this->getStore()->getObject()->getImageContent('jpeg');
-        }
-
         if(config('colortools.rekognition.key') and config('colortools.rekognition.secret') and config('colortools.rekognition.region')) {
+            if($this->width>1920 or $this->height>1920) {
+                $content = $this->getStore()->getObject()->resizeCover(1920, 1920)->getImageContent('jpeg');
+            } else {
+                $content = $this->getStore()->getObject()->getImageContent('jpeg');
+            }
+
             $rekognition = new \Aws\Rekognition\RekognitionClient([
                 'credentials' => (new \Aws\Credentials\Credentials(config('colortools.rekognition.key'), config('colortools.rekognition.secret'))),
                 'version' => 'latest',
