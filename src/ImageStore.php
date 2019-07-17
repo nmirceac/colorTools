@@ -98,6 +98,9 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
         if(!isset($metadata->tags)) {
             $metadata->tags = [];
         }
+        if(!isset($metadata->analyzed)) {
+            $metadata->analyzed = false;
+        }
 
         return $metadata;
     }
@@ -153,6 +156,78 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     public function getColorsAttribute()
     {
         return json_decode($this->attributes['colors']);
+    }
+
+    /**
+     * @param $value
+     */
+    public function setInfoAttribute($value)
+    {
+        return;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getInfoAttribute()
+    {
+        $info = [
+            'analyzed'=>$this->analyzed,
+            'camera'=>false,
+            'artist'=>false,
+            'lens'=>false,
+            'focal'=>false,
+            'exposure'=>false,
+            'f'=>false,
+            'iso'=>false,
+            'labels'=>[],
+            'facesCount'=>0,
+
+        ];
+
+        if(!empty($this->exif)) {
+            $exif = $this->exif;
+            if(isset($exif->Model)) {
+                $info['camera']=$exif->Model;
+            }
+
+            if(isset($exif->Artist)) {
+                $info['artist']=$exif->Artist;
+            }
+
+            if(isset($exif->Lens)) {
+                $info['lens']=$exif->Lens;
+            }
+
+            if(isset($exif->FocalLength)) {
+                $info['focal']=$exif->FocalLength;
+            }
+
+            if(isset($exif->ExposureTime)) {
+                $info['exposure']=$exif->ExposureTime;
+            }
+
+            if(isset($exif->FNumber)) {
+                $info['f']=$exif->FNumber;
+            }
+
+            if(isset($exif->ISO)) {
+                $info['iso']=$exif->ISO;
+            }
+        }
+
+        if(!empty($this->ai)) {
+            if(isset($this->ai->labels) and !empty($this->ai->labels)) {
+                $info['labels']=$this->ai->labels;
+            }
+
+            if(isset($this->ai->rekognition->faces) and !empty($this->ai->rekognition->faces)) {
+                $info['facesCount']=count($this->ai->rekognition->faces);
+            }
+        }
+
+
+        return $info;
     }
 
     /**
