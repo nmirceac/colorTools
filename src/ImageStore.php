@@ -98,9 +98,6 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
         if(!isset($metadata->tags)) {
             $metadata->tags = [];
         }
-        if(!isset($metadata->analyzed)) {
-            $metadata->analyzed = false;
-        }
 
         return $metadata;
     }
@@ -161,78 +158,6 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     /**
      * @param $value
      */
-    public function setInfoAttribute($value)
-    {
-        return;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getInfoAttribute()
-    {
-        $info = [
-            'analyzed'=>$this->analyzed,
-            'camera'=>false,
-            'artist'=>false,
-            'lens'=>false,
-            'focal'=>false,
-            'exposure'=>false,
-            'f'=>false,
-            'iso'=>false,
-            'labels'=>[],
-            'facesCount'=>0,
-
-        ];
-
-        if(!empty($this->exif)) {
-            $exif = $this->exif;
-            if(isset($exif->Model)) {
-                $info['camera']=$exif->Model;
-            }
-
-            if(isset($exif->Artist)) {
-                $info['artist']=$exif->Artist;
-            }
-
-            if(isset($exif->Lens)) {
-                $info['lens']=$exif->Lens;
-            }
-
-            if(isset($exif->FocalLength)) {
-                $info['focal']=$exif->FocalLength;
-            }
-
-            if(isset($exif->ExposureTime)) {
-                $info['exposure']=$exif->ExposureTime;
-            }
-
-            if(isset($exif->FNumber)) {
-                $info['f']=$exif->FNumber;
-            }
-
-            if(isset($exif->ISO)) {
-                $info['iso']=$exif->ISO;
-            }
-        }
-
-        if(!empty($this->ai)) {
-            if(isset($this->ai->labels) and !empty($this->ai->labels)) {
-                $info['labels']=$this->ai->labels;
-            }
-
-            if(isset($this->ai->rekognition->faces) and !empty($this->ai->rekognition->faces)) {
-                $info['facesCount']=count($this->ai->rekognition->faces);
-            }
-        }
-
-
-        return $info;
-    }
-
-    /**
-     * @param $value
-     */
     public function setBasenameAttribute($value)
     {
         return;
@@ -284,6 +209,7 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     }
 
     /**
+     * Finds an image by id
      * @param $id
      * @return \ColorTools\ImageStore
      */
@@ -457,6 +383,11 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
         return $this;
     }
 
+    /**
+     * Gets AI info from 3rd party APIs
+     * @return array
+     * @throws \ColorTools\Exception
+     */
     public function getAiInfo()
     {
         $ai = [];
@@ -554,6 +485,7 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     }
 
     /**
+     * Gets the histogram object
      * @return \ColorTools\Histogram
      * @throws \ColorTools\Exception
      */
@@ -565,6 +497,7 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     }
 
     /**
+     * Gets a base64 encoded image source representing a histogram SVG
      * @param string $histogram
      * @param array $options
      * @return string
@@ -576,6 +509,7 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     }
 
     /**
+     * Returns a laravel response of image representing a histogram SVG
      * @param string $histogram
      * @param array $options
      * @return \Illuminate\Contracts\Routing\ResponseFactory|\Symfony\Component\HttpFoundation\Response
@@ -590,6 +524,7 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     }
 
     /**
+     * Gets the stored content of an image
      * @return mixed
      */
     public function getContent()
@@ -598,11 +533,24 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     }
 
     /**
+     * Checks how many times an image is used within the application
+     * @return integer
+     */
+    public function usageCount()
+    {
+        return $this->getConnection()
+            ->table('image_associations')
+            ->where('image_id', $this->id)
+            ->count();
+    }
+
+    /**
+     * Checks if an image is in use
      * @return bool
      */
     public function inUse()
     {
-        if($this->expenses()->count()>0) {  //////////////////// find relationships
+        if ($this->usageCount() > 0) {
             return true;
         }
 
@@ -610,19 +558,21 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     }
 
     /**
-     * @param $fileId
+     * Tries to delete an image after a detach opeartion, if not in use somewhere else
+     * @param $imageId
      */
-    public static function tryToDelete($fileId) // ???
+    public static function tryToDelete($imageId)
     {
-        $file = self::find($fileId);
-        if(!$file->inUse()) {
-            $file->delete();
+        $image = self::find($imageId);
+        if(!$image->inUse()) {
+            $image->delete();
         }
     }
 
 
     /**
-     * @return bool|void|null
+     * Deletes an image
+     * @return bool
      * @throws \Exception
      */
     public function delete()
@@ -631,12 +581,12 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
             $this->getStore()->deletePublished();
             $this->getStore()->deleteFromStore();
         }
-        parent::delete();
 
-
+        return parent::delete();
     }
 
     /**
+     * Serves an image (inline)
      * @return mixed
      */
     public function serve()
@@ -649,6 +599,7 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     }
 
     /**
+     * Serves an image (download)
      * @return mixed
      */
     public function serveForceDownload()
@@ -661,6 +612,7 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     }
 
     /**
+     * Checks the relation ship with the associated attaching model
      * @param $model
      * @return |null
      * @throws \Exception
@@ -690,6 +642,7 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     }
 
     /**
+     * Attaches a related model to the image
      * @param $model
      * @param string $role
      * @param int $order
@@ -755,6 +708,7 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     }
 
     /**
+     * Replaces an image for a specific role for an attached model
      * @param $model
      * @param string $role
      * @param array $details
@@ -783,6 +737,7 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     }
 
     /**
+     * Clears all images for a specific role for an attached model
      * @param $model
      * @param string $role
      * @param bool $deleteReplaced
@@ -811,6 +766,7 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     }
 
     /**
+     * Gets a public image URL of an image
      * @param closure $transformations
      * @return \ColorTools\Image
      * @throws Exception
@@ -825,6 +781,7 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     }
 
     /**
+     * Gets a public relative URL of an image
      * @param null $transformations
      * @param string $type
      * @return string
@@ -835,6 +792,7 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     }
 
     /**
+     * Gets a public absolute URL of an image
      * @param null $transformations
      * @param string $type
      * @return string
@@ -846,7 +804,8 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
 
 
     /**
-     * @param closure $closure
+     * Applies modifiers to an image
+     * @param Modifier closure $closure
      * @return \ColorTools\Image
      * @throws Exception
      */
@@ -856,7 +815,8 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     }
 
     /**
-     * @param closure $closure
+     * Modify and publish an image
+     * @param Modifier closure $closure
      * @return string
      * @throws Exception
      */
@@ -866,8 +826,9 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     }
 
     /**
+     * Publishes an image and returns it's path
      * @param string $type
-     * @return mixed|string
+     * @return string
      * @throws Exception
      */
     public function publish($type='jpeg')
@@ -876,6 +837,7 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     }
 
     /**
+     * Processes modifier string
      * @param $modifiersString
      * @return Store
      * @throws Exception

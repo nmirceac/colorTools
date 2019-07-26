@@ -147,7 +147,7 @@ class Store
 
         return $path;
     }
-    
+
     public function getPublishedGlobSelector()
     {
         return substr($this->getPublishPath(''), 0, -1).'*';
@@ -421,7 +421,7 @@ class Store
             if(empty($jpegoptim)) {
                 throw new Exception('Cannot find jpegoptim binary');
             }
-            
+
             $parameters = trim(config('colortools.store.optimizeCommand.jpegoptimParams',
                 '-s --all-progressive -m90'));
             exec($jpegoptim[0].' '.$parameters.' '.$filePath);
