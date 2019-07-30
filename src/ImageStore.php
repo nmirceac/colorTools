@@ -228,6 +228,7 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     }
 
     /**
+     * Creates a new ImageStore
      * @param array $metadata
      * @param string $contents
      * @return ImageStore
@@ -295,6 +296,7 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     }
 
     /**
+     * Creates an ImageStore from path
      * @param string $filePath
      * @return ImageStore
      * @throws \Exception
@@ -323,6 +325,7 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     }
 
     /**
+     * Creates an ImageStore form a Laravel request
      * @param \Illuminate\Http\Request $request
      * @param string $fileKey
      * @return \ColorTools\ImageStore
@@ -352,6 +355,144 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
 
         $contents = file_get_contents($fileInfo->getRealPath());
         return static::create($metadata, $contents);
+    }
+
+    /**
+     * Replaces an ImageStore
+     * @param array $metadata
+     * @param string $contents
+     * @return ImageStore
+     * @throws \Exception
+     */
+    public function replace(array $metadata, string $contents='')
+    {
+        $validator = \Validator::make($metadata, [
+            'hash' => 'required|string|size:32',
+            'name' => 'required|string',
+            'mime' => 'required|string',
+            'size' => 'required|numeric'
+        ]);
+
+        if ($validator->fails()) {
+            throw new \Exception($validator->errors());
+        }
+
+        if(empty($contents)) {
+            throw new \Exception('Contents is empty');
+        }
+
+        $image = static::getByHash($metadata['hash']);
+        if(!is_null($image)) {
+            try {
+                $store = \ColorTools\Store::findByHash($metadata['hash']);
+            } catch (\ColorTools\Exception $exception) {
+                if($exception->getCode() == \ColorTools\Exception::STORE_EXCEPTION_HASH_NOT_FOUND) {
+                    $store = \ColorTools\Store::create($contents);
+                    $store->store();
+                }
+            }
+            return $image;
+        } else {
+            $store = \ColorTools\Store::create($contents);
+            $imageDetails = $store->getObject()->serializeDetails();
+            $store->store();
+        }
+
+        $oldHash = $this->hash;
+
+        $this->hash = $metadata['hash'];
+        $this->name = $metadata['name'];
+        $this->type = substr($metadata['mime'], 1 + strrpos($metadata['mime'], '/'));
+        $this->size = $metadata['size'];
+        $this->width = $imageDetails['width'];
+        $this->height = $imageDetails['height'];
+
+        $this->colors = [];
+        $this->ai = [];
+        $this->histogram = [];
+        $this->exif = [];
+
+        if(!isset($metadata['extension']) or (isset($metadata['extension']) and empty($metadata['extension']))) {
+            $metadata['extension'] = $this->type;
+        }
+
+        $this->metadata = $metadata;
+        $this->save();
+
+        if(config('colortools.store.analyzeAfterCreate', false)) {
+            $this->analyze();
+        }
+
+        if(self::where('hash', $oldHash)->count()==0) {
+            $imageFromStore = Store::findByHash($oldHash);
+            if($imageFromStore) {
+                $imageFromStore->deletePublished();
+                $imageFromStore->deleteFromStore();
+            }
+        }
+
+        return $this;
+    }
+    /**
+     * Replaces an ImageStore from path
+     * @param string $filePath
+     * @return ImageStore
+     * @throws \Exception
+     */
+    public function replaceFromPath(string $filePath)
+    {
+        if(!file_exists(($filePath))) {
+            throw new \Exception('File not found at path '.$filePath.' ('.getcwd().'/'.$filePath.')');
+        }
+
+        if(is_dir(($filePath))) {
+            throw new \Exception('The path '.$filePath.' resolves to a directory, not to a file');
+        }
+
+        $metadata['mime'] = Filesystem::mimeType($filePath);
+        $metadata['name'] = Filesystem::name($filePath);
+        $metadata['dirname'] = Filesystem::dirname($filePath);
+        $metadata['basename'] = Filesystem::basename($filePath);
+        $metadata['extension'] = Filesystem::extension($filePath);
+        $metadata['size'] = Filesystem::size($filePath);
+        $metadata['lastModified'] = Filesystem::lastModified($filePath);
+        $metadata['originalPath'] = $filePath;
+        $metadata['hash'] = Filesystem::hash($filePath);
+
+        return $this->replace($metadata, file_get_contents($filePath));
+    }
+
+    /**
+     * Replaces an ImageStore form a Laravel request
+     * @param \Illuminate\Http\Request $request
+     * @param string $fileKey
+     * @return \ColorTools\ImageStore
+     * @throws \Exception
+     */
+    public function replaceFromRequest(\Illuminate\Http\Request $request, $fileKey = 'image')
+    {
+        if(!$request->hasFile($fileKey)) {
+            return response()->json([
+                'error' => 'Missing file "'.$fileKey.'"'
+            ]);
+        }
+
+        $fileInfo = $request->file($fileKey);
+
+        $metadata['mime'] = $fileInfo->getMimeType();
+        $metadata['name'] = $fileInfo->getClientOriginalName();
+        $metadata['basename'] = $fileInfo->getClientOriginalName();
+        $metadata['extension'] = $fileInfo->getClientOriginalExtension();
+        $metadata['size'] = $fileInfo->getSize();
+        $metadata['originalPath'] = $fileInfo->getRealPath();
+        $metadata['hash'] = md5_file($metadata['originalPath']);
+
+        if(!empty($metadata['extension'])) {
+            $metadata['name'] = substr($metadata['name'], 0, -(1+strlen($metadata['extension'])));
+        }
+
+        $contents = file_get_contents($fileInfo->getRealPath());
+        return $this->replace($metadata, $contents);
     }
 
     /**
