@@ -48,7 +48,7 @@ class ImagesController extends \App\Http\Controllers\Controller
 
         }
 
-        return response()->json([$this->itemName => $image]);
+        return response()->json(['image' => $image]);
     }
 
     public function attach()
@@ -71,7 +71,7 @@ class ImagesController extends \App\Http\Controllers\Controller
 
         }
 
-        return response()->json([$this->itemName => $image]);
+        return response()->json(['image' => $image]);
     }
 
     public function delete()
@@ -123,7 +123,7 @@ class ImagesController extends \App\Http\Controllers\Controller
 
         $newImage->log(Log::LOG_IMAGE_REPLACED);
 
-        return response()->json([$this->itemName => $newImage]);
+        return response()->json(['image' => $newImage]);
     }
 
     public function preview($imageId)
@@ -155,7 +155,7 @@ class ImagesController extends \App\Http\Controllers\Controller
         }
 
 
-        return response()->json([$this->itemName => $image]);
+        return response()->json(['image' => $image]);
     }
 
     public function reorder()
