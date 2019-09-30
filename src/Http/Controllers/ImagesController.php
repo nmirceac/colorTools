@@ -121,8 +121,6 @@ class ImagesController extends \App\Http\Controllers\Controller
         $newImage->metadata = $imageMeta;
         $newImage->update();
 
-        $newImage->log(Log::LOG_IMAGE_REPLACED);
-
         return response()->json(['image' => $newImage]);
     }
 
