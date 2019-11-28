@@ -751,10 +751,12 @@ class Image
             throw new Exception('Invalid width');
         }
 
-        $ratio = $this->width / $width;
-        $height = round($this->height / $ratio, 0);
+        if($this->type == self::IMAGE_TYPE_FAKE) {
+            $ratio = $this->width / $width;
+            $height = round($this->height / $ratio, 0);
+            $this->skipNextModifier()->resizeCover($width, $height);
+        }
 
-        $this->skipNextModifier()->resizeCover($width, $height);
         $this->addModifier(self::MODIFIER_FILL_WIDTH, [$width]);
 
         return $this;
@@ -766,10 +768,12 @@ class Image
             throw new Exception('Invalid height');
         }
 
-        $ratio = $this->height / $height;
-        $width = round($this->width / $ratio, 0);
+        if($this->type == self::IMAGE_TYPE_FAKE) {
+            $ratio = $this->height / $height;
+            $width = round($this->width / $ratio, 0);
+            $this->skipNextModifier()->resizeCover($width, $height);
+        }
 
-        $this->skipNextModifier()->resizeCover($width, $height);
         $this->addModifier(self::MODIFIER_FILL_HEIGHT, [$height]);
 
         return $this;
