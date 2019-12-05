@@ -37,11 +37,11 @@ return [
             'engine'=>\ColorTools\Image::RESIZE_ENGINE_NATIVE,
             'imagick'=>[
                 'adaptive'=>false,
-                'filter'=>\Imagick::FILTER_SINC,
+                'filter'=>14, // \Imagick::FILTER_SINC,
                 'blur'=>0.75
             ],
             'gd'=>[
-                'filter'=>IMG_SINC
+                'filter'=>19 // IMG_SINC
             ]
         ]
     ]
