@@ -164,4 +164,22 @@ class ImagesController extends \App\Http\Controllers\Controller
         $object->reorderImagesByRole(request('ids'), request('role'));
     }
 
+    public function associations()
+    {
+        $model = '\\App\\' . ucfirst(request('model'));
+        $model = new $model;
+        $object = $model->find(request('modelId'));
+
+        $traits = (new \ReflectionClass($object))->getTraits();
+
+        if(is_null($object)) {
+            return response()->json(['images' => []]);
+        }
+
+        if (!array_key_exists('ColorTools\HasImages', $traits)) {
+            return response()->json(['images' => []]);
+        }
+
+        return response()->json(['images' => $object->images]);
+    }
 }
