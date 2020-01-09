@@ -172,14 +172,10 @@ class ImagesController extends \App\Http\Controllers\Controller
 
         $traits = (new \ReflectionClass($object))->getTraits();
 
-        if(is_null($object)) {
+        if(!is_null($object) and array_key_exists('ColorTools\HasImages', $traits)) {
+            return response()->json(['images' => $object->images]);
+        } else {
             return response()->json(['images' => []]);
         }
-
-        if (!array_key_exists('ColorTools\HasImages', $traits)) {
-            return response()->json(['images' => []]);
-        }
-
-        return response()->json(['images' => $object->images]);
     }
 }
