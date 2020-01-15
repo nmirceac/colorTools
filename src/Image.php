@@ -1,8 +1,5 @@
 <?php namespace ColorTools;
 
-use lsolesen\pel\PelJpeg;
-use lsolesen\pel\PelTag;
-
 class Image
 {
     public static $settings = [];
