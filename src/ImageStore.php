@@ -912,8 +912,16 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
      * @return \ColorTools\Image
      * @throws Exception
      */
-    public function getUrl($transformations = null, $type='jpeg')
+    public function getUrl($transformations = null, $type='auto')
     {
+        if($type=='auto') {
+            if(strpos(request()->userAgent(), 'Chrome')) {
+                $type='webp';
+            } else {
+                $type='jpeg';
+            }
+        }
+
         if(config('colortools.router.returnRelativeUrls', true)) {
             return $this->getRelativeUrl($transformations, $type);
         } else {
