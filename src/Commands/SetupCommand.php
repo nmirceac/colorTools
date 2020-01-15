@@ -108,7 +108,7 @@ class SetupCommand extends Command
         '<IfModule mod_rewrite.c>'.PHP_EOL.
         '    Options +FollowSymlinks'.PHP_EOL.
         '    RewriteEngine On'.PHP_EOL.PHP_EOL.
-        '    RewriteCond %{REQUEST_URI} /'.config('colortools.store.publicPath').'/[a-z0-9-%=+:]*\.(jpeg|png|gif)$'.PHP_EOL.
+        '    RewriteCond %{REQUEST_URI} /'.config('colortools.store.publicPath').'/[a-z0-9-%=+:]*\.(jpeg|png|gif|webp)$'.PHP_EOL.
         '    RewriteCond %{REQUEST_FILENAME} !-f'.PHP_EOL.
         '    RewriteRule ^(.{2})(.*)$ ./$1/$1$2 [L]'.PHP_EOL.PHP_EOL.
         '    RewriteCond %{REQUEST_FILENAME} !-f'.PHP_EOL.

@@ -549,8 +549,12 @@ class Image
         return $this->imagePath;
     }
 
-    public function getImageContent($outputType='jpeg', $outputTypeQuality=95)
+    public function getImageContent($outputType='jpeg', $outputTypeQuality=null)
     {
+        if(is_null($outputTypeQuality)) {
+            $outputTypeQuality = config('colortools.image.quality', 75);
+        }
+
         if(!is_null($this->imagePath) and !$this->modified) {
             return file_get_contents($this->imagePath);
         } else {

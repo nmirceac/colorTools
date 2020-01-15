@@ -32,6 +32,7 @@ return [
     ],
 
     'image' => [
+        'quality'=>75,
         'preferredEngine' => \ColorTools\Image::ENGINE_GD,
         'resizing' => [
             'engine'=>\ColorTools\Image::RESIZE_ENGINE_NATIVE,
