@@ -18,7 +18,7 @@ class CreateImageAssociationsPivot extends Migration
             $table->foreign('image_id')->references('id')->on('images')->onDelete('cascade');
             $table->integer('association_id')->unsigned()->index();
             $table->string('association_type', 24)->index();
-            $table->tinyInteger('order')->unsigned()->index();
+            $table->smallInteger('order')->unsigned()->index();
             $table->string('role', 32)->index();
             $table->text('details');
             $table->primary(['image_id', 'association_id', 'association_type'], 'image_associations');
