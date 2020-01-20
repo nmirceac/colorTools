@@ -105,6 +105,9 @@ class SetupCommand extends Command
         '    ExpiresActive On'.PHP_EOL.
         '    ExpiresDefault "access plus 30 years"'.PHP_EOL.
         '</IfModule>'.PHP_EOL.
+        '<IfModule mod_mime.c>'.PHP_EOL.
+        '    AddType image/webp .webp'.PHP_EOL.
+        '</IfModule>'.PHP_EOL.
         '<IfModule mod_rewrite.c>'.PHP_EOL.
         '    Options +FollowSymlinks'.PHP_EOL.
         '    RewriteEngine On'.PHP_EOL.PHP_EOL.
