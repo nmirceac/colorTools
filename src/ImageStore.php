@@ -333,7 +333,7 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
      */
     public static function createFromRequest(\Illuminate\Http\Request $request, $fileKey = 'image')
     {
-        if(!isset($request->allFiles()[$file])) {
+        if(!isset($request->allFiles()[$fileKey])) {
             throw new \Exception('Missing file "'.$fileKey.'"');
         }
 
