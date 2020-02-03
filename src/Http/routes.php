@@ -11,6 +11,9 @@ $router->group(['middleware' => config('colortools.router.authMiddleware')], fun
     $router->post('/delete', ['uses'=>'ImagesController@delete', 'as'=>config('colortools.router.namedPrefix').'.delete']);
     $router->post('/replace', ['uses'=>'ImagesController@replace', 'as'=>config('colortools.router.namedPrefix').'.replace']);
     $router->post('/update', ['uses'=>'ImagesController@update', 'as'=>config('colortools.router.namedPrefix').'.update']);
+    $router->post('/updateMetadata', ['uses'=>'ImagesController@updateMetadata', 'as'=>config('colortools.router.namedPrefix').'.updateMetadata']);
+    $router->post('/updateRelatedModelDetails', ['uses'=>'ImagesController@updateRelatedModelDetails', 'as'=>config('colortools.router.namedPrefix').'.updateRelatedModelDetails']);
     $router->post('/reorder', ['uses'=>'ImagesController@reorder', 'as'=>config('colortools.router.namedPrefix').'.reorder']);
     $router->post('/associations', ['uses'=>'ImagesController@associations', 'as'=>config('colortools.router.namedPrefix').'.associations']);
+    $router->post('/associatedModels', ['uses'=>'ImagesController@associatedModels', 'as'=>config('colortools.router.namedPrefix').'.associatedModels']);
 });

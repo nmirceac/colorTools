@@ -156,6 +156,28 @@ class ImagesController extends \App\Http\Controllers\Controller
         return response()->json(['image' => $image]);
     }
 
+    public function updateMetadata()
+    {
+        $image = \App\ImageStore::findOrFail(request('id'));
+        $image->metadata = request('metadata');
+
+        return response()->json(['image' => $image]);
+    }
+
+    public function updateRelatedModelDetails()
+    {
+        if (request('model', false) and request('modelId', false)) {
+            $model = '\\App\\'.ucfirst(request('model'));
+            $model = new $model;
+            $object = $model->find(request('modelId'));
+            $image = $object->images()->find(request('id'));
+            $image->details = (object) request('details');
+            $image->save();
+        }
+
+        return response()->json(['image' => $image]);
+    }
+
     public function reorder()
     {
         $model = '\\App\\' . ucfirst(request('model'));
@@ -177,5 +199,13 @@ class ImagesController extends \App\Http\Controllers\Controller
         } else {
             return response()->json(['images' => []]);
         }
+    }
+
+    public function associatedModels()
+    {
+        return response()->json(\DB::table('image_associations')
+            ->where('image_id', request('id'))
+            ->get(['association_id', 'association_type', 'order', 'role'])
+        );
     }
 }
