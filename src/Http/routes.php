@@ -16,4 +16,5 @@ $router->group(['middleware' => config('colortools.router.authMiddleware')], fun
     $router->post('/reorder', ['uses'=>'ImagesController@reorder', 'as'=>config('colortools.router.namedPrefix').'.reorder']);
     $router->post('/associations', ['uses'=>'ImagesController@associations', 'as'=>config('colortools.router.namedPrefix').'.associations']);
     $router->post('/associatedModels', ['uses'=>'ImagesController@associatedModels', 'as'=>config('colortools.router.namedPrefix').'.associatedModels']);
+    $router->post('/associatedModelsPaginated', ['uses'=>'ImagesController@associatedModelsPaginated', 'as'=>config('colortools.router.namedPrefix').'.associatedModelsPaginated']);
 });

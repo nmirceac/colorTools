@@ -160,6 +160,7 @@ class ImagesController extends \App\Http\Controllers\Controller
     {
         $image = \App\ImageStore::findOrFail(request('id'));
         $image->metadata = request('metadata');
+        $image->save();
 
         return response()->json(['image' => $image]);
     }
@@ -207,5 +208,14 @@ class ImagesController extends \App\Http\Controllers\Controller
             ->where('image_id', request('id'))
             ->get(['association_id', 'association_type', 'order', 'role'])
         );
+    }
+
+    public function associatedModelsPaginated()
+    {
+        return response()->json(['associations'=>\DB::table('image_associations')
+            ->where('image_id', request('id'))
+            ->select(['association_id', 'association_type', 'order', 'role'])
+            ->paginate()
+        ]);
     }
 }
