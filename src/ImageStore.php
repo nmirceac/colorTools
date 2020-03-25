@@ -747,7 +747,7 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
      */
     public function serveForceDownload()
     {
-        return response($this->getContent())
+        return response(file_get_contents($this->getStore()->getPath()))
             ->header('Content-Type', $this->mime)
             ->header('Content-Description', $this->name)
             ->header('Content-Length', $this->size)
