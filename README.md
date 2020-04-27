@@ -561,20 +561,60 @@
     $image = ImageStore::find(3);
     $image->modifyImagePublish(function(\ColorTools\Image $img) {
         $img->fit(1280, 720);
-        $img->applyFilter(\ColorTools\Image::FILTER_BLUR);
+        $img->applyFilter(\ColorTools\Image::FILTER_BLUR, [1, 2]);
     });
 
 
-    // publish image with specified format
+    // conditional resizing
     $image = ImageStore::find(3);
+    $image->modifyImagePublish(function(\ColorTools\Image $img) {
+        if($img->width > $img->height) { // landscape
+            $img->fit(1280, 720);
+        } else {
+            $img->fit(720, 1280);
+        }
+    });
+
+    // publish image with specified format
     $image = ImageStore::find(3);
     $image->modifyImagePublish(function(\ColorTools\Image $img) {
         $img->fit(1280, 720);
-        $img->applyFilter(\ColorTools\Image::FILTER_BLUR);
     }, 'png');
     
     // by default the format is auto which defaults to 'webp' if supported
     // by the client or the original format of the source image
+
+    // get histogram data
+    $image = ImageStore::find(3);
+    $image->getHistogram();
+
+    // get histogram image
+    $image = ImageStore::find(3);
+    $image->getHistogramSrc();
+    // return a base64 encoded svg    
+
+    $image->getHistogramSrc('c'); // color
+    $image->getHistogramSrc('r'); // red
+    $image->getHistogramSrc('g'); // green
+    $image->getHistogramSrc('b'); // blue
+
+    // get used colors
+    $image = ImageStore::find(3);
+    $image->colors;
+
+    /*
+    return object where the key is the hex code and the value is the coverage percentage
+        {#458 ▼
+          +"#919191": 27.16
+          +"#ffffff": 23.37
+          +"#663399": 14.69
+          +"#000000": 9.59
+          +"#ffff91": 7.77
+          +"#ff9191": 6.43
+        }
+    */
+
+    
 
     
 ```
