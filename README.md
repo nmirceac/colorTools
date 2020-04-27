@@ -454,6 +454,129 @@
     // create from Imagick
     $imagickResource = new Imagick('pathTo.jpg');
     Image::create($imagickResource);
+
+    // image modifiers
+    \ColorTools\Image $image = Image::create('pathTo.jpg');
+
+    // fit
+    $cropAnchor = \ColorTools\Image::CROP_ANCHOR_CENTER;
+    // possible other crop values
+    // \ColorTools\Image::CROP_ANCHOR_LEFT, \ColorTools\Image::CROP_ANCHOR_RIGHT
+    // \ColorTools\Image::CROP_ANCHOR_TOP, \ColorTools\Image::CROP_ANCHOR_BOTTOM
+
+    // resizing and cropping the image to fit in a box defined by specified width and height
+    $image->fit(1280, 720, $cropAnchor);
+
+    // resizing and covering the specified width and height
+    $image->resizeCover(1280, 720);
+
+    // resizing while being container within the specified width and height
+    $image->resizeContain(1280, 720);
+
+    // resizing specifing the width
+    $image->fillWidth(720);
+
+    // resizing specifing the height
+    $image->fillHeight(720);
+
+    // cropping
+    $image->doCrop(1280, 720, $cropAnchor);
+
+    // rotate
+    $image->doRotate(90); // degrees
+    
+    // filter
+
+    $filter = \ColorTools\Image::FILTER_SEPIA;
+    $filterParameters = [2];
+
+    $image->applyFilter($filter, $filterParameters);
+    
+
+    $filter = \ColorTools\Image::FILTER_ENHANCE;
+    $image->applyFilter($filter);
+
+    $filter = \ColorTools\Image::FILTER_MOTION_BLUR;
+    $filterParameters = [0.5, 0.5, 2];
+    $image->applyFilter($filter, $filterParameters);
+
+    // supported filter list
+    /*
+    \ColorTools\Image::FILTER_NEGATE,
+    \ColorTools\Image::FILTER_GRAYSCALE,
+    \ColorTools\Image::FILTER_BRIGTHNESS,
+    \ColorTools\Image::FILTER_CONTRAST,
+    \ColorTools\Image::FILTER_COLORIZE,
+    \ColorTools\Image::FILTER_EDGEDETECT,
+    \ColorTools\Image::FILTER_EMBOSS,
+    \ColorTools\Image::FILTER_GAUSSIAN_BLUR,
+    \ColorTools\Image::FILTER_SELECTIVE_BLUR,
+    \ColorTools\Image::FILTER_MEAN_REMOVAL,
+    \ColorTools\Image::FILTER_SMOOTH,
+    \ColorTools\Image::FILTER_PIXELATE,
+    \ColorTools\Image::FILTER_SEPIA,
+    \ColorTools\Image::FILTER_ENHANCE,
+    \ColorTools\Image::FILTER_EQUALIZE,
+    \ColorTools\Image::FILTER_AUTO_LEVEL,
+    \ColorTools\Image::FILTER_MOTION_BLUR,
+    \ColorTools\Image::FILTER_OIL_PAINT,
+    \ColorTools\Image::FILTER_POSTERIZE,
+    \ColorTools\Image::FILTER_RADIAL_BLUR,
+    \ColorTools\Image::FILTER_SEGMENT,
+    \ColorTools\Image::FILTER_SIGMOIDAL_CONTRAST,
+    \ColorTools\Image::FILTER_SKETCH,
+    \ColorTools\Image::FILTER_SOLARIZE,
+    \ColorTools\Image::FILTER_SPREAD,
+    \ColorTools\Image::FILTER_THRESHOLD,
+    \ColorTools\Image::FILTER_BLACK_THRESHOLD,
+    \ColorTools\Image::FILTER_WAVE,
+    \ColorTools\Image::FILTER_VIGNETTE,
+    \ColorTools\Image::FILTER_SWIRL,
+    \ColorTools\Image::FILTER_NOISE,
+    \ColorTools\Image::FILTER_BLUE_SHIFT,
+    \ColorTools\Image::FILTER_CHARCOAL,
+    \ColorTools\Image::FILTER_GAMMA,
+    \ColorTools\Image::FILTER_BLUR,
+    */
     
     
 ```
+
+## ImageStore::class
+
+### ImageStore::class - How to instantiate
+
+```php
+
+    // create from file path
+    ImageStore::createFromPath('pathTo.jpg');
+
+    // create from Laravel request and the file key
+    ImageStore::createFromRequest(request(), 'image'); 
+
+    // get by id
+    $image = ImageStore::find(3);
+
+    // publish image
+    $image = ImageStore::find(3);
+    $image->modifyImagePublish(function(\ColorTools\Image $img) {
+        $img->fit(1280, 720);
+        $img->applyFilter(\ColorTools\Image::FILTER_BLUR);
+    });
+
+
+    // publish image with specified format
+    $image = ImageStore::find(3);
+    $image = ImageStore::find(3);
+    $image->modifyImagePublish(function(\ColorTools\Image $img) {
+        $img->fit(1280, 720);
+        $img->applyFilter(\ColorTools\Image::FILTER_BLUR);
+    }, 'png');
+    
+    // by default the format is auto which defaults to 'webp' if supported
+    // by the client or the original format of the source image
+
+    
+```
+
+
