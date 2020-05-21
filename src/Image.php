@@ -820,7 +820,7 @@ class Image
 
         $ratio = min($horizontalRatio, $verticalRatio);
 
-        $width = $this->width / $ratio;
+        $width = round($this->width / $ratio, 0);
         $height = $this->height / $ratio;
 
         return $this->doResize($width, $height);
