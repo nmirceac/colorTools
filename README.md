@@ -479,6 +479,13 @@
     // resizing specifing the height
     $image->fillHeight(720);
 
+     // resizing while containing within the desired width - won't upscale smaller images
+    $image->containWidth(720);
+
+    // resizing while containing within the desired height - won't upscale smaller images
+    $image->containHeight(720);
+
+
     // cropping
     $image->doCrop(1280, 720, $cropAnchor);
 

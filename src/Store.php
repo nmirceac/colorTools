@@ -417,21 +417,39 @@ class Store
         }
 
         if($type=='jpeg') {
-            exec('which jpegoptim', $jpegoptim);
-            if(empty($jpegoptim)) {
-                throw new Exception('Cannot find jpegoptim binary');
+            if(config('colortools.store.jpegoptimBinaryPath')=='auto') {
+                exec('which jpegoptim', $jpegoptim);
+                if(empty($jpegoptim)) {
+                    throw new Exception('Cannot find jpegoptim binary');
+                } else {
+                    $jpegoptim = $jpegoptim[0];
+                }
+            } else {
+                $jpegoptim = config('colortools.store.jpegoptimBinaryPath');
+                if(!file_exists($jpegoptim)) {
+                    throw new Exception('Cannot find jpegoptim binary at configured path '.config('colortools.store.jpegoptimBinaryPath'));
+                }
             }
 
             $parameters = trim(config('colortools.store.optimizeCommand.jpegoptimParams',
                 '-s --all-progressive -m90'));
-            exec($jpegoptim[0].' '.$parameters.' '.$filePath);
+            exec($jpegoptim.' '.$parameters.' '.$filePath);
             return true;
         }
 
         if($type=='png') {
-            exec('which optipng', $optipng);
-            if(empty($optipng)) {
-                throw new Exception('Cannot find optipng binary');
+            if(config('colortools.store.optipngBinaryPath')=='auto') {
+                exec('which jpegoptim', $optipng);
+                if(empty($optipng)) {
+                    throw new Exception('Cannot find optipng binary');
+                } else {
+                    $optipng = $optipng[0];
+                }
+            } else {
+                $optipng = config('colortools.store.optipngBinaryPath');
+                if(!file_exists($optipng)) {
+                    throw new Exception('Cannot find optipng binary at configured path '.config('colortools.store.jpegoptimBinaryPath'));
+                }
             }
 
             $parameters = trim(config('colortools.store.optimizeCommand.optipngParams',

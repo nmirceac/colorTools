@@ -30,6 +30,8 @@ class Image
     const MODIFIER_FIT='ft';
     const MODIFIER_FILL_WIDTH='fw';
     const MODIFIER_FILL_HEIGHT='fh';
+    const MODIFIER_CONTAIN_WIDTH='cw';
+    const MODIFIER_CONTAIN_HEIGHT='ch';
     const MODIFIER_CONTAIN='ct';
     const MODIFIER_COVER='cv';
     const MODIFIER_ANCHOR='an';
@@ -288,6 +290,8 @@ class Image
                 self::MODIFIER_FIT,
                 self::MODIFIER_FILL_WIDTH,
                 self::MODIFIER_FILL_HEIGHT,
+                self::MODIFIER_CONTAIN_WIDTH,
+                self::MODIFIER_CONTAIN_HEIGHT,
                 self::MODIFIER_CONTAIN,
                 self::MODIFIER_COVER,
                 self::MODIFIER_ANCHOR,
@@ -314,6 +318,14 @@ class Image
 
                 case self::MODIFIER_FILL_HEIGHT:
                     $this->fillHeight($params[0]);
+                    break;
+
+                case self::MODIFIER_CONTAIN_WIDTH:
+                    $this->containWidth($params[0]);
+                    break;
+
+                case self::MODIFIER_CONTAIN_HEIGHT:
+                    $this->containHeight($params[0]);
                     break;
 
                 case self::MODIFIER_CONTAIN:
@@ -752,7 +764,7 @@ class Image
             throw new Exception('Invalid width');
         }
 
-        if($this->type == self::IMAGE_TYPE_FAKE) {
+        if($this->imageType != self::IMAGE_TYPE_FAKE) {
             $ratio = $this->width / $width;
             $height = round($this->height / $ratio, 0);
             $this->skipNextModifier()->resizeCover($width, $height);
@@ -769,13 +781,47 @@ class Image
             throw new Exception('Invalid height');
         }
 
-        if($this->type == self::IMAGE_TYPE_FAKE) {
+        if($this->imageType != self::IMAGE_TYPE_FAKE) {
             $ratio = $this->height / $height;
             $width = round($this->width / $ratio, 0);
             $this->skipNextModifier()->resizeCover($width, $height);
         }
 
         $this->addModifier(self::MODIFIER_FILL_HEIGHT, [$height]);
+
+        return $this;
+    }
+
+    public function containWidth($width=null)
+    {
+        if(is_null($width) or is_null($width)) {
+            throw new Exception('Invalid width');
+        }
+
+        if($this->width>$width and $this->imageType != self::IMAGE_TYPE_FAKE) {
+            $ratio = $this->width / $width;
+            $height = round($this->height / $ratio, 0);
+            $this->skipNextModifier()->resizeCover($width, $height);
+        }
+
+        $this->addModifier(self::MODIFIER_CONTAIN_WIDTH, [$width]);
+
+        return $this;
+    }
+
+    public function containHeight($height=null)
+    {
+        if(is_null($height) or is_null($height)) {
+            throw new Exception('Invalid height');
+        }
+
+        if($this->height>$height and $this->imageType != self::IMAGE_TYPE_FAKE) {
+            $ratio = $this->height / $height;
+            $width = round($this->width / $ratio, 0);
+            $this->skipNextModifier()->resizeCover($width, $height);
+        }
+
+        $this->addModifier(self::MODIFIER_CONTAIN_HEIGHT, [$height]);
 
         return $this;
     }
@@ -1371,10 +1417,23 @@ class Image
     public function getExifInfo()
     {
         if(isset($this->imagePath) and !empty($this->imagePath)) {
-            exec('which exiftool', $exiftool);
+            if(config('colortools.image.exiftoolBinaryPath')=='auto') {
+                exec('which exiftool', $exiftool);
+                if(empty($exiftool)) {
+                    $exiftool = false;
+                } else {
+                    $exiftool = $exiftool[0];
+                }
+            } else {
+                $exiftool = config('colortools.image.exiftoolBinaryPath');
+                if(!file_exists($exiftool)) {
+                    $exiftool = false;
+                }
+            }
+
             if($exiftool) {
                 try {
-                    exec($exiftool[0].' -j '.$this->imagePath, $exif);
+                    exec($exiftool.' -j '.$this->imagePath, $exif);
                     $exif = json_decode(implode('', $exif), true)[0];
                     foreach($exif as $param=>$value) {
                         if(strpos($param, 'File')!==false) {
@@ -1385,6 +1444,14 @@ class Image
                 } catch (\ErrorException $e) {
                     return false;
                 }
+            } else {
+                try {
+                    $exif = exif_read_data($this->imagePath);
+                    $this->exif = $exif;
+                } catch (\Exception $e) {
+                    $exif = [];
+                }
+                $this->exif = $exif;
             }
         }
 

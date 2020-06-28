@@ -22,7 +22,9 @@ return [
         'optimizeCommand' => [
             'jpegoptimParams'=> '-s --all-progressive -m90',
             'optipngParams'=> '-strip all -o2'
-        ]
+        ],
+        'jpegoptimBinaryPath' => 'auto',
+        'optipngBinaryPath' => 'auto',
     ],
 
     'rekognition'=> [

@@ -19,6 +19,12 @@
         "phpunit/phpunit": "6 - 8",
         "aws/aws-sdk-php": "^3.107"
     },
+    "suggest": {
+        "jpegtrans": "External jpegrans binary",
+        "optipng": "Extenral optipng binary",
+        "exiftool-bin": "External exif tool binary",
+        "ext-exif": "Use exif PHP extension as adapter"
+    },
     "autoload": {
         "psr-4": {
             "ColorTools\\": "src/"
