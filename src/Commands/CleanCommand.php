@@ -27,8 +27,10 @@ class CleanCommand extends Command
 
         $storedHashes = ImageStore::get(['hash'])->pluck('hash')->toArray();
 
+        $hashCharGlobString = '[0-9a-f]';
+
         $extraFilesStored = [];
-        foreach(glob($storePath.'/*/*') as $storedFile) {
+        foreach(glob($storePath.'/'.str_repeat($hashCharGlobString, 2).'/'.$hashCharGlobString.'*') as $storedFile) {
             $hash = substr($storedFile, -32);
             if(in_array($hash, $storedHashes)) {
                 continue;
@@ -41,7 +43,7 @@ class CleanCommand extends Command
 
         $filesPublished = [];
         $extraFilesPublished = [];
-        foreach(glob($publicPath.'/*/*') as $publishedFile) {
+        foreach(glob($publicPath.'/'.str_repeat($hashCharGlobString, 2).'/'.$hashCharGlobString.'*') as $publishedFile) {
             $hash = substr($publishedFile, 1 + strrpos($publishedFile, '/'), 32);
             if($this->option('deletePublished', false)) {
                 $filesPublished[] = $publishedFile;
@@ -88,7 +90,7 @@ class CleanCommand extends Command
                 $this->comment('Run php artisan colortools:clean --deletePublished to clean the published images');
             }
         }
-        
+
         $this->info('All done!');
     }
 }
