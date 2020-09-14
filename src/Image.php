@@ -1443,7 +1443,7 @@ class Image
 
         $path = Store::getHashAndTransformations($this->hash, $modifiers);
 
-        $calculatedSignature = Store::getSignature($this->hash.$modifiers, $type);
+        $calculatedSignature = Store::getSignature($this->hash.$modifiers);
 
         if($calculatedSignature == $signature) {
             return true;

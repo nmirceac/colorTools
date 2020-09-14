@@ -340,7 +340,7 @@ class Store
         }
 
         $path = rtrim($path, '-');
-        $signature = self::getSignature($path, $type);
+        $signature = self::getSignature($path);
         if($signature) {
             $path.='-sg='.$signature;
         }
@@ -349,11 +349,11 @@ class Store
         return $path;
     }
 
-    public static function getSignature($path, $type)
+    public static function getSignature($path)
     {
         $key = config('colortools.key');
         if($key) {
-            $signature = substr(md5($path.'-'.$key.'-'.$type), 0, 6);
+            $signature = substr(md5($path.'-'.$key), 0, 6);
             return $signature;
         }
     }
