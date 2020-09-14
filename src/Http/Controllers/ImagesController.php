@@ -2,6 +2,7 @@
 
 namespace ColorTools\Http\Controllers;
 
+use ColorTools\Exception;
 use Illuminate\Http\Request;
 
 class ImagesController extends \App\Http\Controllers\Controller
@@ -13,8 +14,12 @@ class ImagesController extends \App\Http\Controllers\Controller
             $type = substr($urlString, 1 + strrpos($urlString, '.'));
         }
 
-        $store = \ColorTools\Store::findAndProcess($urlString);
-        $store->publish($type);
+        try {
+            $store = \ColorTools\Store::findAndProcess($urlString);
+            $store->publish($type);
+        } catch (Exception $e) {
+            return abort(403, $e->getMessage());
+        }
 
         $contentPath = $store->getPublishPath($type);
         return response(file_get_contents($contentPath))

@@ -39,6 +39,7 @@ class Image
     const MODIFIER_FILTER='fi';
     const MODIFIER_ROTATE='ro';
     const MODIFIER_FLIP='fl';
+    const MODIFIER_SIGNATURE='sg';
 
     protected $preferredEngine = self::ENGINE_GD; // or self::ENGINE_IMAGICK;
 
@@ -272,6 +273,12 @@ class Image
     {
         $filters = [];
 
+        if(config('colortools.key')) {
+            $signatureRequired = true;
+        } else {
+            $signatureRequired = false;
+        }
+
         $modifiers = explode('-', $modifiersString);
         foreach($modifiers as $modifierPart) {
             if(empty($modifierPart)) {
@@ -298,7 +305,8 @@ class Image
                 self::MODIFIER_CROP,
                 self::MODIFIER_FILTER,
                 self::MODIFIER_ROTATE,
-                self::MODIFIER_FLIP
+                self::MODIFIER_FLIP,
+                self::MODIFIER_SIGNATURE,
             ])) {
                 throw new Exception('Problem processing the modifier string - unknown modifier: '.$modifier);
             }
@@ -352,10 +360,18 @@ class Image
                     $this->doFlip($params[0]);
                     break;
 
+                case self::MODIFIER_SIGNATURE:
+                    $this->checkSignature($params[0]);
+                    $signatureRequired = false;
+                    break;
 
                 default:
                     break;
             }
+        }
+
+        if($signatureRequired) {
+            throw new Exception('Signature required');
         }
 
         foreach($filters as $filter=>$params) {
@@ -1412,6 +1428,28 @@ class Image
         $this->getImageObject();
 
         return $this;
+    }
+
+    public function checkSignature($signature=null)
+    {
+        if(is_null($signature)) {
+            throw new Exception('No signature found');
+        }
+
+        $uri = request()->getRequestUri();
+        $type = substr($uri, strrpos($uri, '.')+1);
+        $signature = substr($uri, strrpos($uri, '-sg=')+4, 6);
+        $modifiers = substr($uri, strrpos($uri, $this->hash)+32, (strlen($uri) - strrpos($uri, '-sg=') - 4));
+
+        $path = Store::getHashAndTransformations($this->hash, $modifiers);
+
+        $calculatedSignature = Store::getSignature($this->hash.$modifiers, $type);
+
+        if($calculatedSignature == $signature) {
+            return true;
+        } else {
+            throw new Exception('Invalid signature');
+        }
     }
 
     public function getExifInfo()

@@ -252,6 +252,8 @@ class Store
             $this->getHash()
         ], self::$publicPattern);
 
+
+
         $path = str_replace(DIRECTORY_SEPARATOR.DIRECTORY_SEPARATOR, DIRECTORY_SEPARATOR, $path);
         $path.= $this->storeSuffix;
 
@@ -332,14 +334,28 @@ class Store
         if(!is_null($modifiers)) {
             if(is_array($modifiers) or is_callable($modifiers)) {
                 $path.=self::convertTransformationsToModifierString($modifiers);
-
             } else if(is_string($modifiers)) {
                 $path.='-'.ltrim($modifiers, '-');
             }
         }
 
+        $path = rtrim($path, '-');
+        $signature = self::getSignature($path, $type);
+        if($signature) {
+            $path.='-sg='.$signature;
+        }
+
         $path.='.'.$type;
         return $path;
+    }
+
+    public static function getSignature($path, $type)
+    {
+        $key = config('colortools.key');
+        if($key) {
+            $signature = substr(md5($path.'-'.$key.'-'.$type), 0, 6);
+            return $signature;
+        }
     }
 
     public static function convertTransformationsToModifierString($transformations = null)

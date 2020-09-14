@@ -10,6 +10,8 @@ return [
         'authMiddleware'=>'auth'
     ],
 
+    'key'=>'',
+
     'store'=> [
         'storeBasePath'=>'../store/',
         'publicPattern'=>'images/%hash%',
