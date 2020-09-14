@@ -1437,12 +1437,18 @@ class Image
         }
 
         $uri = request()->getRequestUri();
-        $type = substr($uri, strrpos($uri, '.')+1);
         $signature = substr($uri, strrpos($uri, '-sg=')+4, 6);
-        $modifiers = substr($uri, strrpos($uri, $this->hash)+32, (strlen($uri) - strrpos($uri, '-sg=') - 4));
+        $modifiers = substr($uri, strrpos($uri, $this->hash)+32);
+
+        if(strrpos($modifiers, '.')) {
+            $modifiers = substr($modifiers, 0, strrpos($modifiers, '.'));
+        }
+
+        if(strrpos($modifiers, '-sg=')) {
+            $modifiers = substr($modifiers, 0, strrpos($modifiers, '-sg='));
+        }
 
         $path = Store::getHashAndTransformations($this->hash, $modifiers);
-
         $calculatedSignature = Store::getSignature($this->hash.$modifiers);
 
         $referer = request()->headers->get('referer');
