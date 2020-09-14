@@ -1445,6 +1445,16 @@ class Image
 
         $calculatedSignature = Store::getSignature($this->hash.$modifiers);
 
+        $referer = request()->headers->get('referer');
+        $refererBypass = config('colortools.refererBypassSignatureCheck');
+        if(!empty($refererBypass) and is_array($refererBypass)) {
+            foreach($refererBypass as $safeReferer) {
+                if(!empty($safeReferer) and stripos($referer, $safeReferer)!==false) {
+                    return false;
+                }
+            }
+        }
+
         if($calculatedSignature == $signature) {
             return true;
         } else {

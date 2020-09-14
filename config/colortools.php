@@ -11,6 +11,9 @@ return [
     ],
 
     'key'=>'',
+    'refererBypassSignatureCheck'=>[
+        // 'subdomain.example.tld',
+    ],
 
     'store'=> [
         'storeBasePath'=>'../store/',
