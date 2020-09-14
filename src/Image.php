@@ -370,6 +370,10 @@ class Image
             }
         }
 
+        if(self::checkSafeReferer()) {
+            $signatureRequired = false;
+        }
+
         if($signatureRequired) {
             throw new Exception('Signature required');
         }
@@ -1430,8 +1434,27 @@ class Image
         return $this;
     }
 
+    public static function checkSafeReferer()
+    {
+        $referer = request()->headers->get('referer');
+        $refererBypass = config('colortools.refererBypassSignatureCheck');
+        if(!empty($refererBypass) and is_array($refererBypass)) {
+            foreach($refererBypass as $safeReferer) {
+                if(!empty($safeReferer) and stripos($referer, $safeReferer)!==false) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     public function checkSignature($signature=null)
     {
+        if(self::checkSafeReferer()) {
+            return true;
+        }
+
         if(is_null($signature)) {
             throw new Exception('No signature found');
         }
@@ -1450,16 +1473,6 @@ class Image
 
         $path = Store::getHashAndTransformations($this->hash, $modifiers);
         $calculatedSignature = Store::getSignature($this->hash.$modifiers);
-
-        $referer = request()->headers->get('referer');
-        $refererBypass = config('colortools.refererBypassSignatureCheck');
-        if(!empty($refererBypass) and is_array($refererBypass)) {
-            foreach($refererBypass as $safeReferer) {
-                if(!empty($safeReferer) and stripos($referer, $safeReferer)!==false) {
-                    return false;
-                }
-            }
-        }
 
         if($calculatedSignature == $signature) {
             return true;
