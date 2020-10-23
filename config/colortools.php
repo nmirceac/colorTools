@@ -6,7 +6,7 @@ return [
         'returnRelativeUrls'=>true,
         'prefix'=>'images',
         'namedPrefix'=>'image',
-        'guestMiddleware'=>'web',
+        'guestMiddleware'=>'',
         'authMiddleware'=>'auth'
     ],
 

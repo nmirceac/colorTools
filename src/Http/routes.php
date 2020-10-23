@@ -1,8 +1,12 @@
 <?php
 
-$router->get('/{image}', ['uses'=>'ImagesController@index', 'as'=>config('colortools.router.namedPrefix').'.get']);
+if(config('colortools.router.guestMiddleware')) {
+    $router->get('/{image}', ['uses'=>'ImagesController@index', 'middleware' => config('colortools.router.guestMiddleware'), 'as'=>config('colortools.router.namedPrefix').'.get']);
+} else {
+    $router->get('/{image}', ['uses'=>'ImagesController@index', 'as'=>config('colortools.router.namedPrefix').'.get']);
+}
 
-$router->group(['middleware' => config('colortools.router.authMiddleware')], function ($router) {
+$router->group(['middleware' => ['web', config('colortools.router.authMiddleware')]], function ($router) {
     $router->get('/h/{type}/{image}', ['uses'=>'ImagesController@histogram', 'as'=>config('colortools.router.namedPrefix').'.histogram']);
     $router->get('/preview/{image}', ['uses'=>'ImagesController@preview', 'as'=>config('colortools.router.namedPrefix').'.preview']);
     $router->get('/download/{image}', ['uses'=>'ImagesController@download', 'as'=>config('colortools.router.namedPrefix').'.download']);

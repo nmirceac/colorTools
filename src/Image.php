@@ -1484,7 +1484,7 @@ class Image
     public function getExifInfo()
     {
         if(isset($this->imagePath) and !empty($this->imagePath)) {
-            if(config('colortools.image.exiftoolBinaryPath')=='auto') {
+            if(config('colortools.image.exiftoolBinaryPath')=='auto' or empty(config('colortools.image.exiftoolBinaryPath'))) {
                 exec('which exiftool', $exiftool);
                 if(empty($exiftool)) {
                     $exiftool = false;

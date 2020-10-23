@@ -433,7 +433,7 @@ class Store
         }
 
         if($type=='jpeg') {
-            if(config('colortools.store.jpegoptimBinaryPath')=='auto') {
+            if(config('colortools.store.jpegoptimBinaryPath')=='auto' or empty(config('colortools.store.jpegoptimBinaryPath'))) {
                 exec('which jpegoptim', $jpegoptim);
                 if(empty($jpegoptim)) {
                     throw new Exception('Cannot find jpegoptim binary');
@@ -454,7 +454,7 @@ class Store
         }
 
         if($type=='png') {
-            if(config('colortools.store.optipngBinaryPath')=='auto') {
+            if(config('colortools.store.optipngBinaryPath')=='auto' or empty(config('colortools.store.optipngBinaryPath'))) {
                 exec('which jpegoptim', $optipng);
                 if(empty($optipng)) {
                     throw new Exception('Cannot find optipng binary');
@@ -464,7 +464,7 @@ class Store
             } else {
                 $optipng = config('colortools.store.optipngBinaryPath');
                 if(!file_exists($optipng)) {
-                    throw new Exception('Cannot find optipng binary at configured path '.config('colortools.store.jpegoptimBinaryPath'));
+                    throw new Exception('Cannot find optipng binary at configured path '.config('colortools.store.optipngBinaryPath'));
                 }
             }
 

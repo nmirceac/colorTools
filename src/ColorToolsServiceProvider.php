@@ -19,7 +19,6 @@ class ColorToolsServiceProvider extends ServiceProvider
         if(config('colortools.router.includeRoutes')) {
             $router->prefix(config('colortools.router.prefix'))
                 ->namespace('ColorTools\Http\Controllers')
-                ->middleware(config('colortools.router.guestMiddleware'))
                 ->group(__DIR__.'/Http/routes.php');
         }
 

@@ -23,6 +23,7 @@ class ImagesController extends \App\Http\Controllers\Controller
 
         $contentPath = $store->getPublishPath($type);
         return response(file_get_contents($contentPath))
+            ->header('cache-control', 'max-age=946080000')
             ->header('content-type', 'image/'.$type)
             ->header('content-length', filesize($contentPath));
     }
