@@ -36,6 +36,7 @@ class Image
     const MODIFIER_COVER='cv';
     const MODIFIER_ANCHOR='an';
     const MODIFIER_CROP='cr';
+    const MODIFIER_PRECISE_CROP='pc';
     const MODIFIER_FILTER='fi';
     const MODIFIER_ROTATE='ro';
     const MODIFIER_FLIP='fl';
@@ -303,6 +304,7 @@ class Image
                 self::MODIFIER_COVER,
                 self::MODIFIER_ANCHOR,
                 self::MODIFIER_CROP,
+                self::MODIFIER_PRECISE_CROP,
                 self::MODIFIER_FILTER,
                 self::MODIFIER_ROTATE,
                 self::MODIFIER_FLIP,
@@ -346,6 +348,10 @@ class Image
 
                 case self::MODIFIER_CROP:
                     $this->doCrop($params[0], $params[1]);
+                    break;
+
+                case self::MODIFIER_PRECISE_CROP:
+                    $this->doCrop($params[0], $params[1], $params[2], $params[3]);
                     break;
 
                 case self::MODIFIER_FILTER:
@@ -1031,6 +1037,10 @@ class Image
             $this->convertObjectTypeToImagick();
         }
 
+        if(is_null($this->imageObjectType)) {
+            $this->refreshImageObject();
+        }
+
         if($this->width > $width) {
             $widthOffset = floor(($this->width - $width)/2);
         } else {
@@ -1071,6 +1081,80 @@ class Image
 
             case self::IMAGE_OBJECT_TYPE_IMAGICK:
                 $this->image->cropImage($width, $height, $widthOffset, $heightOffset);
+                $this->imageType = self::IMAGE_TYPE_IMAGICK;
+                break;
+
+            default:
+                break;
+        }
+
+//        $this->hash = null; # adding rehashing function
+        $this->imageObject = null;
+        $this->modified = true;
+        $this->width=$width;
+        $this->height=$height;
+
+        return $this;
+    }
+
+    public function doPreciseCrop($left=null, $top=null, $width=null, $height=null)
+    {
+        if(is_null($left) or is_null($top)) {
+            throw new Exception('Invalid left/top coordinates');
+        }
+
+        if(is_null($width) or is_null($height)) {
+            throw new Exception('Invalid sizes');
+        }
+
+        $this->addModifier(self::MODIFIER_PRECISE_CROP, [$left, $top, $width, $height]);
+        if($this->imageType==self::IMAGE_TYPE_FAKE) {
+            return $this;
+        }
+
+        // to check if also to fix for normal crop;
+
+        if($this->resizingOptions['engine']==self::RESIZE_ENGINE_GD) {
+            $this->convertObjectTypeToGd();
+        }
+
+        if($this->resizingOptions['engine']==self::RESIZE_ENGINE_IMAGICK) {
+            $this->convertObjectTypeToImagick();
+        }
+
+        if(is_null($this->imageObjectType)) {
+            $this->refreshImageObject();
+        }
+
+        if($width > $this->width) {
+            $width = $this->width;
+        }
+        if($this->width > $left + $width) {
+            $left = $this->width - $width;
+        }
+
+        if($height > $this->height) {
+            $height = $this->height;
+        }
+        if($this->height > $top + $height) {
+            $top = $this->height - $height;
+        }
+
+        switch ($this->imageObjectType) {
+            case self::IMAGE_OBJECT_TYPE_GD:
+                $image = imagecreatetruecolor($width, $height);
+                if($this->type=='png') {
+                    imagealphablending($image, false);
+                    imagesavealpha($image, true);
+                }
+                imagecopyresampled($image, $this->image, 0, 0, $left, $top, $width, $height, $width, $height);
+                imagedestroy($this->image);
+                $this->image = $image;
+                $this->imageType = self::IMAGE_TYPE_GD;
+                break;
+
+            case self::IMAGE_OBJECT_TYPE_IMAGICK:
+                $this->image->cropImage($width, $height, $left, $top);
                 $this->imageType = self::IMAGE_TYPE_IMAGICK;
                 break;
 
