@@ -1126,17 +1126,35 @@ class Image
             $this->refreshImageObject();
         }
 
+
+        // support for percentual params
+        if($left > 0 and $left<1) {
+            $left *= $this->width;
+        }
+        if($width > 0 and $width<1) {
+            $width *= $this->width;
+        }
+
+        if($top > 0 and $top<1) {
+            $top *= $this->height;
+        }
+        if($height > 0 and $height<1) {
+            $height *= $this->height;
+        }
+
+
+        // checking boundaris
         if($width > $this->width) {
             $width = $this->width;
         }
-        if($this->width > $left + $width) {
+        if($this->width < $left + $width) {
             $left = $this->width - $width;
         }
 
         if($height > $this->height) {
             $height = $this->height;
         }
-        if($this->height > $top + $height) {
+        if($this->height < $top + $height) {
             $top = $this->height - $height;
         }
 
