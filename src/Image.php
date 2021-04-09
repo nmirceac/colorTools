@@ -1129,21 +1129,21 @@ class Image
 
         // support for percentual params
         if($left > 0 and $left<1) {
-            $left *= $this->width;
+            $left = round($left * $this->width, 0);
         }
         if($width > 0 and $width<1) {
-            $width *= $this->width;
+            $width = round($width * $this->width, 0);
         }
 
         if($top > 0 and $top<1) {
-            $top *= $this->height;
+            $top = round($top * $this->height, 0);
         }
         if($height > 0 and $height<1) {
-            $height *= $this->height;
+            $height = round($height * $this->height, 0);
         }
 
 
-        // checking boundaris
+        // checking boundaries
         if($width > $this->width) {
             $width = $this->width;
         }

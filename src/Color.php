@@ -363,7 +363,7 @@ class Color
                 $color=trim($value, "# \r\n\t");
                 if(ctype_xdigit($color)) {
                     if(strlen($color) == 3) {
-                        $color = $color{0}.$color{0}.$color{1}.$color{1}.$color{2}.$color{2};
+                        $color = substr($color, 0, 1).substr($color, 0, 1).substr($color, 1, 1).substr($color, 1, 1).substr($color, 2, 1).substr($color, 2, 1);
                     }
 
                     if(strlen($color) < 6) {

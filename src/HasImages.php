@@ -24,7 +24,7 @@ trait HasImages
     public function imagesRelationship() {
         return $this->morphToMany(\App\ImageStore::class,
             'association',
-            'image_associations',
+            \App\ImageStore::IMAGE_ASSOCIATIONS_PIVOT_TABLE,
             'association_id',
             'image_id'
         )->withPivot(\App\ImageStore::$withPivot)
