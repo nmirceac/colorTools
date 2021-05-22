@@ -16,7 +16,7 @@
     "require": {
         "php": ">=5.4.0",
         "ext-gd": "*",
-        "phpunit/phpunit": "6 - 8",
+        "phpunit/phpunit": "6 - 9",
         "aws/aws-sdk-php": "^3.107"
     },
     "suggest": {
