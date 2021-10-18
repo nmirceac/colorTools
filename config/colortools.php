@@ -42,6 +42,7 @@ return [
         'quality'=>90,
         'preferredEngine' => \ColorTools\Image::ENGINE_GD,
         'resizing' => [
+            'bounds' => env('COLORTOOLS_RESIZE_BOUNDS', 3840),
             'engine'=>\ColorTools\Image::RESIZE_ENGINE_NATIVE,
             'imagick'=>[
                 'adaptive'=>false,

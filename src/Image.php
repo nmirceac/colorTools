@@ -904,6 +904,14 @@ class Image
             throw new Exception('Invalid sizes');
         }
 
+        if($width<1 or $height<1) {
+            throw new Exception('None of the parameters can be smaller than 1');
+        }
+
+        if($width>config('colortools.image.resizing.bounds') or $height>config('colortools.image.resizing.bounds')) {
+            throw new Exception('None of the parameters can be out of the resizing bounds of '.config('colortools.image.resizing.bounds'));
+        }
+
         $this->refreshImageObject();
 
         if($this->resizingOptions['engine']==self::RESIZE_ENGINE_GD) {

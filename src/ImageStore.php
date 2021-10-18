@@ -526,6 +526,94 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
         return $this;
     }
 
+    public static function getAiInfoFromContent($content)
+    {
+        if(!(config('colortools.rekognition.key') and config('colortools.rekognition.secret') and config('colortools.rekognition.region'))) {
+            return [];
+        }
+
+        $rekognition = new \Aws\Rekognition\RekognitionClient([
+            'credentials' => (new \Aws\Credentials\Credentials(config('colortools.rekognition.key'), config('colortools.rekognition.secret'))),
+            'version' => 'latest',
+            'region' => config('colortools.rekognition.region')
+        ]);
+
+        try {
+            $result = $rekognition->detectLabels(array(
+                    'Image' => array(
+                        'Bytes' => $content,
+                    ),
+                    'Attributes' => array('ALL')
+                )
+            );
+        } catch (\Aws\S3\Exception\S3Exception $exception) {
+            throw new \Exception($exception->getAwsErrorMessage());
+        }
+
+        $ai['rekognition']['labels'] = $result->toArray()['Labels'];
+
+        $searchFaces = false;
+        $searchText = false;
+
+        foreach($ai['rekognition']['labels'] as $label) {
+            if($label['Confidence']>=20) {
+                $ai['labels'][] = $label['Name'];
+            }
+
+            if(in_array($label['Name'], ['Human', 'Person', 'People', 'Portrait'])) {
+                $searchFaces = true;
+            }
+
+            if(in_array($label['Name'], ['Sign', 'Symbol', 'Text'])) {
+                $searchText = true;
+            }
+        }
+
+        $ai['labels'] = array_unique($ai['labels']);
+
+        if($searchFaces) {
+            try {
+                $result = $rekognition->detectFaces(array(
+                        'Image' => array(
+                            'Bytes' => $content,
+                        ),
+                        'Attributes' => array('ALL')
+                    )
+                );
+            } catch (\Aws\S3\Exception\S3Exception $exception) {
+                throw new \Exception($exception->getAwsErrorMessage());
+            }
+
+            $ai['rekognition']['faces'] = $result->toArray()['FaceDetails'];
+        }
+
+        if($searchText) {
+            try {
+                $result = $rekognition->detectText(array(
+                        'Image' => array(
+                            'Bytes' => $content,
+                        ),
+                        'Attributes' => array('ALL')
+                    )
+                );
+            } catch (\Aws\S3\Exception\S3Exception $exception) {
+                throw new \Exception($exception->getAwsErrorMessage());
+            }
+
+            $ai['rekognition']['text'] = $result->toArray()['TextDetections'];
+
+            foreach($ai['rekognition']['text'] as $text) {
+                if($text['Type']=='LINE') {
+                    $ai['text'][] = $text['DetectedText'];
+                }
+            }
+
+            $ai['text'] = array_unique($ai['text']);
+        }
+
+        return $ai;
+    }
+
     /**
      * Gets AI info from 3rd party APIs
      * @return array
@@ -542,86 +630,11 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
                 $content = $this->getStore()->getObject()->getImageContent('jpeg');
             }
 
-            $rekognition = new \Aws\Rekognition\RekognitionClient([
-                'credentials' => (new \Aws\Credentials\Credentials(config('colortools.rekognition.key'), config('colortools.rekognition.secret'))),
-                'version' => 'latest',
-                'region' => config('colortools.rekognition.region')
-            ]);
-
-
             try {
-                $result = $rekognition->detectLabels(array(
-                        'Image' => array(
-                            'Bytes' => $content,
-                        ),
-                        'Attributes' => array('ALL')
-                    )
-                );
-            } catch (\Aws\S3\Exception\S3Exception $exception) {
-                throw new \Exception($exception->getAwsErrorMessage());
+                $ai = self::getAiInfoFromContent($content);
+            } catch (\Exception $e) {
+                throw new \Exception($e->getMessage());
             }
-
-            $ai['rekognition']['labels'] = $result->toArray()['Labels'];
-
-            $searchFaces = false;
-            $searchText = false;
-
-            foreach($ai['rekognition']['labels'] as $label) {
-                if($label['Confidence']>=20) {
-                    $ai['labels'][] = $label['Name'];
-                }
-
-                if(in_array($label['Name'], ['Human', 'Person', 'People', 'Portrait'])) {
-                    $searchFaces = true;
-                }
-
-                if(in_array($label['Name'], ['Sign', 'Symbol', 'Text'])) {
-                    $searchText = true;
-                }
-            }
-
-            $ai['labels'] = array_unique($ai['labels']);
-
-            if($searchFaces) {
-                try {
-                    $result = $rekognition->detectFaces(array(
-                            'Image' => array(
-                                'Bytes' => $content,
-                            ),
-                            'Attributes' => array('ALL')
-                        )
-                    );
-                } catch (\Aws\S3\Exception\S3Exception $exception) {
-                    throw new \Exception($exception->getAwsErrorMessage());
-                }
-
-                $ai['rekognition']['faces'] = $result->toArray()['FaceDetails'];
-            }
-
-            if($searchText) {
-                try {
-                    $result = $rekognition->detectText(array(
-                            'Image' => array(
-                                'Bytes' => $content,
-                            ),
-                            'Attributes' => array('ALL')
-                        )
-                    );
-                } catch (\Aws\S3\Exception\S3Exception $exception) {
-                    throw new \Exception($exception->getAwsErrorMessage());
-                }
-
-                $ai['rekognition']['text'] = $result->toArray()['TextDetections'];
-
-                foreach($ai['rekognition']['text'] as $text) {
-                    if($text['Type']=='LINE') {
-                        $ai['text'][] = $text['DetectedText'];
-                    }
-                }
-
-                $ai['text'] = array_unique($ai['text']);
-            }
-
         }
 
         return $ai;
