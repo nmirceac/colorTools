@@ -11,7 +11,9 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
     /**
      * @var null
      */
-    private $relationship = null;
+    private $relationship = [];
+
+    const IMAGE_ASSOCIATIONS_PIVOT_TABLE = 'image_associations';
 
     /**
      * @var array
@@ -775,12 +777,13 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
      */
     private function checkRelationship($model)
     {
-        if(is_null($this->relationship)) {
-            if(!is_object($model)) {
-                throw new \Exception('Passed model variable is not an object');
-            }
+        if(!is_object($model)) {
+            throw new \Exception('Passed model variable is not an object');
+        }
 
-            $modelName = get_class($model);
+        $modelName = get_class($model);
+
+        if (!isset($this->relationship[$modelName])) {
             $modelName = strtolower(substr($modelName, 1 + strrpos($modelName, '\\')));
 
             if(!method_exists($this, $modelName) and !method_exists($this, str_plural($modelName))) {
@@ -791,10 +794,10 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
                 throw new \Exception('Model of type '.get_class($model).' is missing a relationship to '.self::class);
             }
 
-            $this->relationship = $model->imagesRelationship();
+            $this->relationship[$modelName] = $model->imagesRelationship();
         }
 
-        return $this->relationship;
+        return $this->relationship[$modelName];
     }
 
     /**
@@ -910,6 +913,20 @@ class ImageStore extends \Illuminate\Database\Eloquent\Model
         }
 
         $model->reorderImagesByRole([], $role);
+    }
+
+    public function clearForModel($model)
+    {
+        $relationship = $this->checkRelationship($model);
+        $relationship->detach();
+    }
+
+    public function clearAllAssociations()
+    {
+        return \DB::connection($this->connection)
+            ->table(self::FILE_ASSOCIATIONS_PIVOT_TABLE)
+            ->where('file_id', $this->id)
+            ->delete();
     }
 
     /**
